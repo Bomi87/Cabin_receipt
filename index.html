@@ -304,6 +304,18 @@ input:not([type=hidden]):not([type=file]),select,textarea,
 @media(max-width:430px){.receipt-info .line .k,.receipt-info .line .v,.receipt-info .noteblock>.k,.receipt-info .note-row .k,.receipt-info .note-row .v{font-size:7px!important;padding:2px 1px!important}}
 @media print{.receipt-grid{grid-template-columns:65% 35%!important;aspect-ratio:1600 / 1700;height:auto!important;min-height:0!important}.receipt-photo img{max-height:none!important}}
 </style>
+<style id="receipt-unified-seven-rows">
+/* All seven label/value cells share exactly the same vertical dividing line. */
+.receipt-info>.line,.receipt-info .note-row{grid-template-columns:35% 65%!important;}
+.receipt-info>.noteblock{display:block!important;min-height:0;flex:1;}
+.receipt-info>.noteblock>.note-rows{display:grid!important;grid-template-rows:repeat(4,minmax(0,1fr))!important;height:100%!important;min-height:0;}
+.receipt-info .line .k,.receipt-info .line .v,
+.receipt-info .note-row .k,.receipt-info .note-row .v{
+  min-width:0;white-space:nowrap!important;word-break:normal!important;
+  overflow-wrap:normal!important;overflow:hidden;text-overflow:ellipsis;
+}
+@media(max-width:430px){.receipt-info>.line,.receipt-info .note-row{grid-template-columns:35% 65%!important;}}
+</style>
 </head>
 <body>
 <div id="receiptAuthScreen" style="min-height:100vh;display:flex;align-items:center;justify-content:center;background:#f2f5fa;padding:20px;font-family:Arial,sans-serif"><div style="width:min(100%,420px);border:1px solid #dbe3ef;background:white;border-radius:18px;padding:26px;text-align:center;box-shadow:0 10px 30px #14233812"><h2 style="margin:0 0 12px">CABIN RECEIPT</h2><p id="receiptAuthStatus" style="color:#52647b;font-size:14px;line-height:1.6">Google 계정을 확인하는 중입니다.</p><div id="receiptGoogleButton" style="display:flex;justify-content:center;margin-top:16px"></div></div></div>
@@ -494,9 +506,6 @@ input:not([type=hidden]):not([type=file]),select,textarea,
           </div>
 </div>
 <div class="noteblock">
-<div class="k">
-           비고
-          </div>
 <div class="note-rows">
 <div class="note-row">
 <div class="k">
@@ -732,8 +741,7 @@ async function createReceiptPng(src,targetCtx=null,offsetY=0){
  if(targetCtx)g.translate(0,offsetY);
  const left=24,top=24,right=1576,bottom=1676,divide=1033;
  const infoWidth=right-divide,upperLabelEnd=divide+infoWidth*.35;
- const noteFirstEnd=divide+infoWidth*.18;
- const noteSecondEnd=noteFirstEnd+(infoWidth*.82)*.36;
+ const noteSecondEnd=upperLabelEnd;
  const topRowHeight=116,noteTop=top+3*topRowHeight;
  const noteRowHeight=(bottom-noteTop)/4;
  g.fillStyle='#fff';g.fillRect(0,0,1600,1700);
@@ -773,16 +781,15 @@ async function createReceiptPng(src,targetCtx=null,offsetY=0){
    label(title,divide,y0,upperLabelEnd,y1);value(v,upperLabelEnd,y0,right,y1);
    if(i<2)line(divide,y1,right,y1);
  });
- label('비고',divide,noteTop,noteFirstEnd,bottom,27);
  const notes=[['구분',$('category').value],['기종',$('aircraft').value],['트립시작일',tripDisplay($('tripDate').value)],['세부내역',$('details').value]];
  notes.forEach(([title,v],i)=>{const y0=noteTop+i*noteRowHeight,y1=y0+noteRowHeight;
-   label(title,noteFirstEnd,y0,noteSecondEnd,y1,23);
+   label(title,divide,y0,noteSecondEnd,y1,23);
    value(v,noteSecondEnd,y0,right,y1,26);
-   if(i<3)line(noteFirstEnd,y1,right,y1);
+   if(i<3)line(divide,y1,right,y1);
  });
- line(divide,top,divide,bottom);line(upperLabelEnd,top,upperLabelEnd,noteTop);
- line(divide,noteTop,right,noteTop);line(noteFirstEnd,noteTop,noteFirstEnd,bottom);
- line(noteSecondEnd,noteTop,noteSecondEnd,bottom);
+ line(divide,top,divide,bottom);
+ line(upperLabelEnd,top,upperLabelEnd,bottom);
+ line(divide,noteTop,right,noteTop);
  g.strokeRect(left,top,right-left,bottom-top);
  g.restore();
  return c?c.toDataURL('image/png'):null;
