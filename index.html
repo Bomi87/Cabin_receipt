@@ -207,6 +207,30 @@ input:not([type=hidden]):not([type=file]),select,textarea,
 .receipt-info .line,.receipt-info .note-row{min-width:0;}
 @media(max-width:430px){.receipt-info>.line{grid-template-columns:53.5% 46.5%!important;}.receipt-info>.noteblock{grid-template-columns:25% 75%!important;}.receipt-info .note-row{grid-template-columns:38% 62%!important;}}
 </style>
+<style id="ios-focus-and-grid-overlap-fix">
+/* Prevent native date controls from forcing their grid track beyond 50%. */
+.section-content,.section-content .two,.section-content .field{min-width:0;max-width:100%;}
+.section-content .two{grid-template-columns:repeat(2,minmax(0,1fr))!important;}
+.section-content .two>.field{width:100%;min-width:0;max-width:100%;overflow:visible;}
+.section-content .two>.field>input,
+.section-content .two>.field>select{width:100%!important;max-width:100%!important;min-width:0!important;box-sizing:border-box!important;}
+/* Date pickers have a platform intrinsic minimum size on iOS. */
+#tripDate{display:block;width:100%!important;min-width:0!important;max-width:100%!important;-webkit-appearance:none;appearance:none;overflow:hidden;}
+#details{min-width:0!important;max-width:100%!important;}
+@media screen and (max-width:1020px){
+  html{-webkit-text-size-adjust:100%!important;text-size-adjust:100%!important;}
+  .field input:not([type="hidden"]),.field select,.syncbox input,
+  input[type="date"],input[type="number"],input[type="text"],select,textarea{
+    font-size:18px!important;line-height:normal!important;
+    -webkit-text-size-adjust:100%!important;
+  }
+  .section-content .two{gap:12px!important;}
+  input,select,textarea{touch-action:manipulation;}
+}
+@media screen and (max-width:360px){
+  .section-content .two{grid-template-columns:minmax(0,1fr)!important;}
+}
+</style>
 </head>
 <body>
 <div id="receiptAuthScreen" style="min-height:100vh;display:flex;align-items:center;justify-content:center;background:#f2f5fa;padding:20px;font-family:Arial,sans-serif"><div style="width:min(100%,420px);border:1px solid #dbe3ef;background:white;border-radius:18px;padding:26px;text-align:center;box-shadow:0 10px 30px #14233812"><h2 style="margin:0 0 12px">CABIN RECEIPT</h2><p id="receiptAuthStatus" style="color:#52647b;font-size:14px;line-height:1.6">Google 계정을 확인하는 중입니다.</p><div id="receiptGoogleButton" style="display:flex;justify-content:center;margin-top:16px"></div></div></div>
@@ -626,17 +650,20 @@ function wrapCanvasText(ctx,value,x,y,maxWidth,lineH,maxLines=3){
  for(const ch of chars){if(ctx.measureText(line+ch).width>maxWidth&&line){ctx.fillText(line,x,y+lines*lineH);lines++;line='';if(lines>=maxLines)return;}line+=ch;}
  if(line)ctx.fillText(line,x,y+lines*lineH);
 }
-async function createReceiptPng(src){
- const im=await decodeImage(src),c=document.createElement('canvas');
- c.width=1600;c.height=940;
- const g=c.getContext('2d');
+async function createReceiptPng(src,targetCtx=null,offsetY=0){
+ const im=await decodeImage(src);
+ const c=targetCtx?null:document.createElement('canvas');
+ if(c){c.width=1600;c.height=940;}
+ const g=targetCtx||c.getContext('2d');
+ g.save();
+ if(targetCtx)g.translate(0,offsetY);
  const left=24,top=24,right=1576,bottom=916,divide=832;
  const infoWidth=right-divide,upperLabelEnd=divide+infoWidth*.535;
  const noteFirstEnd=divide+infoWidth*.25;
  const noteSecondEnd=noteFirstEnd+(infoWidth*.75)*.38;
  const topRowHeight=116,noteTop=top+3*topRowHeight;
  const noteRowHeight=(bottom-noteTop)/4;
- g.fillStyle='#fff';g.fillRect(0,0,c.width,c.height);
+ g.fillStyle='#fff';g.fillRect(0,0,1600,940);
  const ratio=Math.min((divide-left-32)/im.width,(bottom-top-32)/im.height);
  const w=im.width*ratio,h=im.height*ratio;
  g.drawImage(im,(left+divide-w)/2,(top+bottom-h)/2,w,h);
@@ -671,7 +698,8 @@ async function createReceiptPng(src){
  line(divide,noteTop,right,noteTop);line(noteFirstEnd,noteTop,noteFirstEnd,bottom);
  line(noteSecondEnd,noteTop,noteSecondEnd,bottom);
  g.strokeRect(left,top,right-left,bottom-top);
- return c.toDataURL('image/png');
+ g.restore();
+ return c?c.toDataURL('image/png'):null;
 }
 async function downloadReceiptPng(){
  if(!photos.length){notice('영수증 사진을 추가하세요.');return;}
@@ -679,10 +707,22 @@ async function downloadReceiptPng(){
  const url=await createCombinedReceiptPng();
  const a=document.createElement('a');a.download=combinedReceiptFilename();a.href=url;
  document.body.append(a);a.click();a.remove();
- notice('완성 양식 PNG 1개 다운로드 · '+photos.length+'개 구역');
+ notice('완성 PNG 1개 다운로드 · 첫 사진+정보, 나머지 '+Math.max(0,photos.length-1)+'장');
 }
 
-// 사진 N장 × 1페이지 구성을 세로로 합친 단일 PNG (최대 8구역).
+// 첫 구역: 사진 1장 + 영수증 정보 테이블.
+// 두 번째 구역부터: 테이블 없이 첨부 사진만 최대 크기로 표시.
+async function drawAdditionalPhoto(src, ctx, offsetY){
+ const im=await decodeImage(src);
+ const padding=24, availableW=1600-padding*2, availableH=940-padding*2;
+ const scale=Math.min(availableW/im.width,availableH/im.height);
+ const w=im.width*scale,h=im.height*scale;
+ ctx.save();
+ ctx.fillStyle='#ffffff';ctx.fillRect(0,offsetY,1600,940);
+ ctx.drawImage(im,(1600-w)/2,offsetY+(940-h)/2,w,h);
+ ctx.restore();
+}
+// 첫 구역만 테이블을 포함하고 이후는 사진만 세로로 연결하는 PNG 1개.
 async function createCombinedReceiptPng(){
  if(!photos.length || photos.length>8)throw Error('사진은 1~8장을 첨부해야 합니다.');
  const canvas=document.createElement('canvas');
@@ -690,10 +730,12 @@ async function createCombinedReceiptPng(){
  const ctx=canvas.getContext('2d',{alpha:false});
  if(!ctx)throw Error('이미지 캔버스를 생성하지 못했습니다.');
  ctx.fillStyle='#ffffff';ctx.fillRect(0,0,canvas.width,canvas.height);
- for(let i=0;i<photos.length;i++){
-  const page=await createReceiptPng(photos[i]);
-  const img=await decodeImage(page);
-  ctx.drawImage(img,0,i*940,1600,940);
+ // 중간 PNG 인코딩/디코딩 없이 최종 캔버스에 직접 그립니다.
+ // 첫 사진에만 오른쪽 정보 테이블을 넣습니다.
+ await createReceiptPng(photos[0],ctx,0);
+ // 두 번째 사진부터는 표 없이 사진만 아래에 배치합니다.
+ for(let i=1;i<photos.length;i++){
+  await drawAdditionalPhoto(photos[i],ctx,i*940);
  }
  try{return canvas.toDataURL('image/png');}
  catch(e){throw Error('PNG 생성에 실패했습니다. 사진의 크기를 줄여 다시 시도하세요.');}
