@@ -759,7 +759,7 @@ async function downloadReceiptPng(){
  const url=await createCombinedReceiptPng();
  const a=document.createElement('a');a.download=combinedReceiptFilename();a.href=url;
  document.body.append(a);a.click();a.remove();
- notice('완성 PNG 1개 다운로드 · 첫 사진+정보, 나머지 '+Math.max(0,photos.length-1)+'장');
+ notice('완성 JPEG 1개 다운로드 · 첫 사진+정보, 나머지 '+Math.max(0,photos.length-1)+'장');
 }
 
 // 첫 구역: 사진 1장 + 영수증 정보 테이블.
@@ -778,9 +778,9 @@ async function drawAdditionalPhoto(src, ctx, offsetY){
 async function createCombinedReceiptPng(){
  if(!photos.length || photos.length>8)throw Error('사진은 1~8장을 첨부해야 합니다.');
  const canvas=document.createElement('canvas');
- // 1600px 원본 레이아웃 좌표를 유지하되 출력 픽셀은 75%로 축소합니다.
- // 8장 기준 1600x7520 -> 1200x5640 (약 44% 적은 픽셀).
- const outputScale=.75;
+ // 1600px 레이아웃 좌표는 유지하고 실제 출력 폭은 900px로 축소합니다.
+ // 8장: 900 x 4230px. 단일 JPEG 품질 0.78로 사진 용량을 절약합니다.
+ const outputScale=.5625;
  canvas.width=Math.round(1600*outputScale);
  canvas.height=Math.round(940*photos.length*outputScale);
  const ctx=canvas.getContext('2d',{alpha:false,willReadFrequently:false});
@@ -794,16 +794,16 @@ async function createCombinedReceiptPng(){
  for(let i=1;i<photos.length;i++){
   await drawAdditionalPhoto(photos[i],ctx,i*940);
  }
- try{return canvas.toDataURL('image/png');}
- catch(e){throw Error('PNG 생성에 실패했습니다. 사진의 크기를 줄여 다시 시도하세요.');}
+ try{return canvas.toDataURL('image/jpeg',.78);}
+ catch(e){throw Error('JPEG 생성에 실패했습니다. 사진의 크기를 줄여 다시 시도하세요.');}
 }
-function combinedReceiptFilename(){return fileBaseName()+'.png'}
-function resizePhoto(file){return new Promise((resolve,reject)=>{if(!file.type.startsWith('image/'))return reject(Error('이미지 파일만 선택할 수 있습니다.'));const img=new Image(),url=URL.createObjectURL(file);img.onload=()=>{try{const s=Math.min(1,1200/Math.max(img.naturalWidth,img.naturalHeight)),c=document.createElement('canvas');c.width=Math.max(1,Math.round(img.naturalWidth*s));c.height=Math.max(1,Math.round(img.naturalHeight*s));c.getContext('2d',{alpha:false}).drawImage(img,0,0,c.width,c.height);URL.revokeObjectURL(url);resolve(c.toDataURL('image/jpeg',.66))}catch(e){URL.revokeObjectURL(url);reject(e)}};img.onerror=()=>{URL.revokeObjectURL(url);reject(Error('사진을 읽지 못했습니다.'))};img.src=url})}
+function combinedReceiptFilename(){return fileBaseName()+'.jpg'}
+function resizePhoto(file){return new Promise((resolve,reject)=>{if(!file.type.startsWith('image/'))return reject(Error('이미지 파일만 선택할 수 있습니다.'));const img=new Image(),url=URL.createObjectURL(file);img.onload=()=>{try{const s=Math.min(1,900/Math.max(img.naturalWidth,img.naturalHeight)),c=document.createElement('canvas');c.width=Math.max(1,Math.round(img.naturalWidth*s));c.height=Math.max(1,Math.round(img.naturalHeight*s));c.getContext('2d',{alpha:false}).drawImage(img,0,0,c.width,c.height);URL.revokeObjectURL(url);resolve(c.toDataURL('image/jpeg',.60))}catch(e){URL.revokeObjectURL(url);reject(e)}};img.onerror=()=>{URL.revokeObjectURL(url);reject(Error('사진을 읽지 못했습니다.'))};img.src=url})}
 async function readPhotos(files){try{for(const f of files){if(photos.length>=8)throw Error('한 건당 사진은 최대 8장입니다.');photos.push(await resizePhoto(f));}selectedPhoto=Math.max(0,photos.length-1);syncPhotos();notice('첨부 '+photos.length+'장')}catch(e){notice(e.message)}}
 function readPhoto(file){return readPhotos(file?[file]:[])}
 async function startCamera(){try{if(!navigator.mediaDevices?.getUserMedia)throw Error('브라우저 카메라를 사용할 수 없습니다.');stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'},width:{ideal:1920}},audio:false});$('video').srcObject=stream;$('cameraOverlay').classList.add('open')}catch(e){stopCamera();$('cameraFile').click();notice('기본 카메라 앱으로 전환합니다.')}}
 function stopCamera(){if(stream){stream.getTracks().forEach(t=>t.stop());stream=null}$('video').srcObject=null;$('cameraOverlay').classList.remove('open')}
-function takePhoto(){const v=$('video');if(!v.videoWidth){notice('카메라 준비 중입니다.');return}if(photos.length>=8){stopCamera();notice('최대 8장입니다.');return}const can=document.createElement('canvas'),s=Math.min(1,1200/Math.max(v.videoWidth,v.videoHeight));can.width=Math.round(v.videoWidth*s);can.height=Math.round(v.videoHeight*s);can.getContext('2d').drawImage(v,0,0,can.width,can.height);photos.push(can.toDataURL('image/jpeg',.66));selectedPhoto=photos.length-1;stopCamera();syncPhotos()}
+function takePhoto(){const v=$('video');if(!v.videoWidth){notice('카메라 준비 중입니다.');return}if(photos.length>=8){stopCamera();notice('최대 8장입니다.');return}const can=document.createElement('canvas'),s=Math.min(1,900/Math.max(v.videoWidth,v.videoHeight));can.width=Math.round(v.videoWidth*s);can.height=Math.round(v.videoHeight*s);can.getContext('2d').drawImage(v,0,0,can.width,can.height);photos.push(can.toDataURL('image/jpeg',.60));selectedPhoto=photos.length-1;stopCamera();syncPhotos()}
 function saved(){try{return JSON.parse(localStorage.getItem(KEY)||'[]')}catch{return []}}function setSaved(x){localStorage.setItem(KEY,JSON.stringify(x))}
 function record(){return{id:currentId||('r'+Date.now().toString(36)+Math.random().toString(36).slice(2)),dept:$('dept').value,name:selectedName(),...Object.fromEntries(fields.map(id=>[id,$(id).value])),folderUrl,baseVersion:cloudVersion,updated:new Date().toISOString()}}
 function refreshSaved(){const rows=saved().sort((a,b)=>b.updated.localeCompare(a.updated));$('savedList').innerHTML='<option value="">새 양식 / 저장본 선택</option>'+rows.map(r=>`<option value="${esc(r.id)}">${esc(r.name||'미지정')} · ${esc(r.approval||'승인번호 없음')} · ${esc((r.updated||'').slice(0,10))}</option>`).join('');$('savedList').value=currentId}
@@ -977,9 +977,9 @@ $('cloudSave').addEventListener('click',()=>{
   const originalLabel=saveButton.textContent;
   saveButton.textContent='저장 중…';
   try{
-   // PNG 렌더링은 동시에 처리하며 서버에는 한 번만 보냅니다.
-   const combinedPng=await createCombinedReceiptPng();
-   const outputs=[combinedPng];
+   // JPEG 완성본을 한번 생성하여 전송합니다.
+   const combinedJpeg=await createCombinedReceiptPng();
+   const outputs=[combinedJpeg];
    const names=[combinedReceiptFilename()];
    // Retain the SAME token and record ID after a timeout: safe idempotent retry.
    // Changed data must get a NEW token; the previous uncertain save is never overwritten silently.
