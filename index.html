@@ -29,7 +29,7 @@
 :root{--blue:#235fc8;--ink:#1b2b43;--line:#e1e7f0;--bg:#f1f4f9}
 html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
 body{line-height:1.5}
-header{padding:14px max(22px,calc((100vw - 1380px)/2));background:#142742;box-shadow:0 2px 14px #10243c10;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+header{padding:14px max(24px,calc((100vw - 1380px)/2 + 24px));background:#142742;box-shadow:0 2px 14px #10243c10;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
 .brand{display:flex;align-items:center;gap:12px}.brand-icon{font-size:24px;display:grid;place-items:center;width:42px;height:42px;border-radius:12px;background:#ffffff1c;color:#cfe1ff}
 .brand strong,.brand small{display:block}.brand strong{font-size:15px;letter-spacing:.055em}.brand small{font-size:12px;font-weight:450;color:#d0def0;margin-top:1px}
 .shell{max-width:1380px;padding:25px 24px}.intro{margin:0 0 17px}
@@ -88,6 +88,11 @@ header{padding:14px max(22px,calc((100vw - 1380px)/2));background:#142742;box-sh
 .preview .preview-save #topSaveStatus:not([hidden]){display:inline-flex!important;align-items:center;white-space:nowrap;font-size:14px;font-weight:800;color:#16824f;background:#e8f7ef;border:1px solid #bae5ce;border-radius:9px;padding:9px 12px}
 .preview .preview-save #topSaveStatus[hidden]{display:none!important}
 @media(max-width:600px){.preview .preview-save #topSaveStatus:not([hidden]){font-size:12px;padding:7px 9px}}
+/* iOS Safari: native picker controls must remain at least 16px on focus */
+html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
+input:not([type=hidden]):not([type=file]),select,textarea,
+.field input,.field select,.saved select,.syncbox input{font-size:16px!important;line-height:normal}
+@media (max-width:850px){input:not([type=hidden]):not([type=file]),select,textarea{font-size:16px!important}}
 </style>
 <style>
 /* 2026-10-09 compact one-column receipt editor + separate newest-first list */
@@ -277,27 +282,11 @@ header{padding:14px max(22px,calc((100vw - 1380px)/2));background:#142742;box-sh
 <div class="two">
 <label class="field">
          구분
-         <input id="category" list="categories" placeholder="기내지원비"/>
-<datalist id="categories">
-<option value="기내지원비">
-<option value="케이터링">
-<option value="교통비">
-<option value="숙박비">
-<option value="기타">
-</option>
-</option>
-</option>
-</option>
-</option>
-</datalist>
+         <select id="category"><option value="">구분 선택</option><option value="기내지원비">기내지원비</option><option value="케이터링">케이터링</option><option value="교통비">교통비</option><option value="숙박비">숙박비</option><option value="기타">기타</option></select>
 </label>
 <label class="field">
          기종
-         <input id="aircraft" list="aircrafts" placeholder="A319"/>
-<datalist id="aircrafts">
-<option value="A319"></option>
-<option value="G650"></option>
-</datalist>
+         <select id="aircraft"><option value="">기종 선택</option><option value="A319">A319</option><option value="G650">G650</option></select>
 </label>
 </div>
 <div class="two">
@@ -504,6 +493,7 @@ header{padding:14px max(22px,calc((100vw - 1380px)/2));background:#142742;box-sh
 <div id="toast">
 </div>
 </div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.2/jspdf.umd.min.js"></script>
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 <script>
 // Shared ApprovedUsers / Google Identity Services authorization.
@@ -693,6 +683,23 @@ async function downloadReceiptPng(){
  notice('완성 양식 PNG '+photos.length+'개 다운로드');
 }
 
+async function createReceiptPdf(){
+ if(!window.jspdf || !window.jspdf.jsPDF)throw Error('PDF 생성 모듈을 불러오지 못했습니다. 인터넷 연결을 확인한 뒤 새로고침하세요.');
+ if(!photos.length || photos.length>8)throw Error('사진은 1~8장을 첨부해야 합니다.');
+ const pdf=new window.jspdf.jsPDF({orientation:'landscape',unit:'pt',format:[1600,940],compress:true});
+ for(let i=0;i<photos.length;i++){
+  if(i)pdf.addPage([1600,940],'landscape');
+  // Current receipt layout renderer is reused unchanged, but only ONE PDF is exported.
+  const png=await createReceiptPng(photos[i]);
+  const im=await decodeImage(png),canvas=document.createElement('canvas');
+  canvas.width=1600;canvas.height=940;
+  canvas.getContext('2d').drawImage(im,0,0,1600,940);
+  const jpeg=canvas.toDataURL('image/jpeg',0.86);
+  pdf.addImage(jpeg,'JPEG',0,0,1600,940,undefined,'FAST');
+ }
+ return 'data:application/pdf;base64,'+pdf.output('datauristring').split(',')[1];
+}
+function receiptPdfFilename(){return fileBaseName()+'.pdf'}
 function resizePhoto(file){return new Promise((resolve,reject)=>{if(!file.type.startsWith('image/'))return reject(Error('이미지 파일만 선택할 수 있습니다.'));const img=new Image(),url=URL.createObjectURL(file);img.onload=()=>{const s=Math.min(1,1400/Math.max(img.naturalWidth,img.naturalHeight)),c=document.createElement('canvas');c.width=Math.round(img.naturalWidth*s);c.height=Math.round(img.naturalHeight*s);c.getContext('2d').drawImage(img,0,0,c.width,c.height);URL.revokeObjectURL(url);resolve(c.toDataURL('image/jpeg',.7))};img.onerror=()=>{URL.revokeObjectURL(url);reject(Error('사진을 읽지 못했습니다.'))};img.src=url})}
 async function readPhotos(files){try{for(const f of files){if(photos.length>=8)throw Error('한 건당 사진은 최대 8장입니다.');photos.push(await resizePhoto(f));}selectedPhoto=Math.max(0,photos.length-1);syncPhotos();notice('첨부 '+photos.length+'장')}catch(e){notice(e.message)}}
 function readPhoto(file){return readPhotos(file?[file]:[])}
@@ -825,7 +832,7 @@ $('downloadSelectedZip').addEventListener('click',()=>runCloud('ZIP 생성',asyn
  if(ids.length>25)throw Error('한 번에 최대 25건을 선택할 수 있습니다.');
  $('zipResult').textContent='ZIP 생성 중...';
  const data=await cloudRequest('zip',{ids:JSON.stringify(ids)});
- const a=document.createElement('a');a.href=data.url;a.target='_blank';a.rel='noopener';a.textContent='ZIP 다운로드: '+data.name+' ('+data.count+'건 / '+data.files+'개 PNG)';
+ const a=document.createElement('a');a.href=data.url;a.target='_blank';a.rel='noopener';a.textContent='ZIP 다운로드: '+data.name+' ('+data.count+'건 / '+data.files+'개 파일)';
  $('zipResult').replaceChildren(a);cloudStatus('ZIP 준비 완료 · 아래 링크를 눌러 다운로드하세요.');
 }));
 // 같은 양식/사진의 재클릭은 추가 파일을 만들지 않습니다. 수정한 내용은 다시 저장할 수 있습니다.
@@ -873,13 +880,13 @@ $('cloudSave').addEventListener('click',()=>{
   saveButton.textContent='저장 중…';
   try{
    // PNG 렌더링은 동시에 처리하며 서버에는 한 번만 보냅니다.
-   const outputs=await Promise.all(photos.map(createReceiptPng));
-   const names=photos.map((_,i)=>finalImageFilename(i,photos.length));
+   const pdfData=await createReceiptPdf();
+   const pdfName=receiptPdfFilename();
    // Retain the SAME token and record ID after a timeout: safe idempotent retry.
    // Changed data must get a NEW token; the previous uncertain save is never overwritten silently.
    if(pendingSaveSignature!==signature){pendingSaveToken='';pendingSaveSignature=signature;}
    if(!pendingSaveToken)pendingSaveToken='save_'+Date.now().toString(36)+'_'+Math.random().toString(36).slice(2);
-   const data=await cloudRequest('save',{payload:JSON.stringify({...r,photos,outputs,names,baseVersion:cloudVersion,saveToken:pendingSaveToken})});
+   const data=await cloudRequest('save',{payload:JSON.stringify({...r,photos,pdfData,pdfName,baseVersion:cloudVersion,saveToken:pendingSaveToken})});
    currentId=data.id;cloudVersion=data.baseVersion||data.updated||'';
    pendingSaveToken='';pendingSaveSignature='';folderUrl=data.folderUrl||'';
    // 서버 저장 완료를 즉시 표시. 브라우저의 보조 로컬 보관은 뒤에서 처리합니다.
