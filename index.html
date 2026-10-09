@@ -536,7 +536,7 @@ function receiptStartAuth(){
 window.addEventListener('load',receiptStartAuth);
    'use strict';
 let EMPLOYEES=[]; // Google Sheets '구성원정보'에서만 불러옵니다.
-const fields=['approval','amount','category','aircraft','tripDate','details'];const $=id=>document.getElementById(id);const KEY='receiptTemplateSavedV1';let photo='',photos=[],selectedPhoto=0,folderUrl='',currentId='',stream=null,dbPromise=null;let cloudBusy=false,cloudVersion='',pendingSaveToken='';const CLOUD_URL_KEY='receiptFlowCloudUrlV1';
+const fields=['approval','amount','category','aircraft','tripDate','details'];const $=id=>document.getElementById(id);const KEY='receiptTemplateSavedV1';let photo='',photos=[],selectedPhoto=0,folderUrl='',currentId='',stream=null,dbPromise=null;let cloudBusy=false,cloudVersion='',pendingSaveToken='',lastCompletedSaveSignature='';const CLOUD_URL_KEY='receiptFlowCloudUrlV1';
 function notice(t){$('toast').textContent=t;$('toast').style.display='block';clearTimeout(notice.timer);notice.timer=setTimeout(()=>$('toast').style.display='none',2600)}
 function staffInit(){
  const previousName=$('name').value;
@@ -652,8 +652,8 @@ function refreshSaved(){const rows=saved().sort((a,b)=>b.updated.localeCompare(a
 function openDb(){return dbPromise||(dbPromise=new Promise((res,rej)=>{const q=indexedDB.open('receiptTemplatePhotosV1',1);q.onupgradeneeded=()=>q.result.createObjectStore('photos');q.onsuccess=()=>res(q.result);q.onerror=()=>rej(q.error)}))}
 async function photoOp(id,value,mode){const db=await openDb();return new Promise((res,rej)=>{const tx=db.transaction('photos',mode==='get'?'readonly':'readwrite'),s=tx.objectStore('photos');const r=mode==='get'?s.get(id):mode==='delete'?s.delete(id):s.put(value,id);r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)})}
 async function saveRecord(){const r=record();try{await photoOp(r.id,photos,'put');const list=saved().filter(e=>e.id!==r.id);list.push(r);setSaved(list);currentId=r.id;refreshSaved();notice('양식을 저장했습니다.')}catch(e){notice('저장 실패: 저장 공간 또는 브라우저 설정을 확인하세요.')}}
-function clearForm(){const category=$('category').value;const aircraft=$('aircraft').value;currentId='';cloudVersion='';pendingSaveToken='';fillNames();for(const id of fields)$(id).value='';$('category').value=category;$('aircraft').value=aircraft;$('details').value='케이터링_';photos=[];selectedPhoto=0;folderUrl='';syncPhotos();refreshSaved();render()}
-async function loadRecord(id){if(!id)return clearForm();const r=saved().find(x=>x.id===id);if(!r)return;currentId=id;cloudVersion=r.baseVersion||'';pendingSaveToken='';fillNames(r.name||'');for(const k of fields)$(k).value=r[k]||'';try{{const savedPhotos=await photoOp(id,null,'get');photos=Array.isArray(savedPhotos)?savedPhotos:(savedPhotos?[savedPhotos]:[]);selectedPhoto=0;folderUrl=r.folderUrl||'';syncPhotos()}}catch{photos=[];selectedPhoto=0;folderUrl='';syncPhotos()}render();refreshSaved();notice('저장된 양식을 불러왔습니다.')}
+function clearForm(){lastCompletedSaveSignature='';const category=$('category').value;const aircraft=$('aircraft').value;currentId='';cloudVersion='';pendingSaveToken='';fillNames();for(const id of fields)$(id).value='';$('category').value=category;$('aircraft').value=aircraft;$('details').value='케이터링_';photos=[];selectedPhoto=0;folderUrl='';syncPhotos();refreshSaved();render()}
+async function loadRecord(id){lastCompletedSaveSignature='';if(!id)return clearForm();const r=saved().find(x=>x.id===id);if(!r)return;currentId=id;cloudVersion=r.baseVersion||'';pendingSaveToken='';fillNames(r.name||'');for(const k of fields)$(k).value=r[k]||'';try{{const savedPhotos=await photoOp(id,null,'get');photos=Array.isArray(savedPhotos)?savedPhotos:(savedPhotos?[savedPhotos]:[]);selectedPhoto=0;folderUrl=r.folderUrl||'';syncPhotos()}}catch{photos=[];selectedPhoto=0;folderUrl='';syncPhotos()}render();refreshSaved();notice('저장된 양식을 불러왔습니다.')}
 async function deleteRecord(){if(!currentId){notice('삭제할 저장본을 선택하세요.');return}if(!confirm('선택한 저장본을 삭제하시겠습니까?'))return;try{await photoOp(currentId,null,'delete');setSaved(saved().filter(x=>x.id!==currentId));clearForm();notice('삭제했습니다.')}catch(e){notice('삭제하지 못했습니다.')}}
 // Google Apps Script HTML form bridge: avoids GitHub Pages-to-Apps Script CORS restrictions.
 function backendAddress(){const url=$('backendUrl').value.trim();if(!/^https:\/\/script\.google\.com\/macros\/s\/[\w-]+\/exec$/.test(url))throw Error('유효한 Apps Script /exec URL을 입력하세요.');return url}
@@ -725,8 +725,51 @@ $('downloadSelectedZip').addEventListener('click',()=>runCloud('ZIP 생성',asyn
  const a=document.createElement('a');a.href=data.url;a.target='_blank';a.rel='noopener';a.textContent='ZIP 다운로드: '+data.name+' ('+data.count+'건 / '+data.files+'개 PNG)';
  $('zipResult').replaceChildren(a);cloudStatus('ZIP 준비 완료 · 아래 링크를 눌러 다운로드하세요.');
 }));
-$('cloudSave').addEventListener('click',()=>runCloud('클라우드 저장',async()=>{const r=record();if(!currentId)currentId=r.id;if(!r.name)throw Error('이름을 선택하세요.');if(!photos.length)throw Error('영수증 사진을 첨부하세요.');if(!/^\d{8}$/.test(String(r.approval||'').trim()))throw Error('승인번호는 정확히 8자리 숫자로 입력해야 합니다.');const outputs=await Promise.all(photos.map(createReceiptPng));const names=photos.map((_,i)=>finalImageFilename(i,photos.length));if(!pendingSaveToken)pendingSaveToken='save_'+Date.now().toString(36)+'_'+Math.random().toString(36).slice(2);const data=await cloudRequest('save',{payload:JSON.stringify({...r,photos,outputs,names,baseVersion:cloudVersion,saveToken:pendingSaveToken})});currentId=data.id;cloudVersion=data.baseVersion||data.updated||'';pendingSaveToken='';folderUrl=data.folderUrl||'';await saveRecord();if(cloudListLoaded){cachedCloudRecords=cachedCloudRecords.filter(x=>x.id!==data.id);cachedCloudRecords.push({id:data.id,name:r.name,approval:r.approval,name:r.name,amount:r.amount,category:r.category,aircraft:r.aircraft,tripDate:r.tripDate,details:r.details,photoCount:data.photoCount,folderUrl:data.folderUrl,submitter:receiptCurrentUser?.name||receiptCurrentUser?.email||'',updated:data.updated||new Date().toISOString()});paintCloudList(data.id)}cloudStatus('클라우드 저장 완료 · '+data.photoCount+'장 · 서버 호출 1회 · 폴더 링크가 위에 표시됩니다.')}));
-$('cloudLoad').addEventListener('click',()=>runCloud('클라우드 불러오기',async()=>{const id=$('cloudList').value;if(!id)throw Error('클라우드 저장본을 먼저 선택하세요.');const d=await cloudRequest('load',{id});const r=d.record;currentId=r.id;cloudVersion=r.version||r.updated||'';pendingSaveToken='';fillNames(r.name||'');for(const k of fields)$(k).value=r[k]||'';photos=d.photos|| (d.photo?[d.photo]:[]);selectedPhoto=0;folderUrl=d.folderUrl||r.folderUrl||'';syncPhotos();cloudStatus('클라우드 양식을 불러왔습니다. 필요한 경우 양식 저장을 눌러 기기에도 보관하세요.')}));
+// 같은 양식/사진의 재클릭은 추가 파일을 만들지 않습니다. 수정한 내용은 다시 저장할 수 있습니다.
+function receiptSaveSignature(r){
+ const values=[r.id,r.dept,r.name,...fields.map(k=>String(r[k]||''))];
+ // 원본 이미지 전부를 복사/직렬화하지 않고 변경 여부만 확인합니다.
+ return JSON.stringify(values)+'|'+photos.map(p=>String(p.length)+':'+p.slice(0,96)+':'+p.slice(-96)).join('|');
+}
+$('cloudSave').addEventListener('click',()=>{
+ if(cloudBusy)return; // 연타/복수 저장 요청을 시작 단계에서 차단
+ runCloud('클라우드 저장',async()=>{
+  const r=record();
+  if(!r.name)throw Error('이름을 선택하세요.');
+  if(!photos.length)throw Error('영수증 사진을 첨부하세요.');
+  if(!/^\d{8}$/.test(String(r.approval||'').trim()))throw Error('승인번호는 정확히 8자리 숫자로 입력해야 합니다.');
+  if(!currentId)currentId=r.id;
+  r.id=currentId;
+  const signature=receiptSaveSignature(r);
+  if(lastCompletedSaveSignature===signature && cloudVersion){
+   cloudStatus('이미 저장한 영수증입니다. 중복 파일을 생성하지 않았습니다.');
+   return;
+  }
+  const saveButton=$('topSave'), cloudButton=$('cloudSave');
+  saveButton.disabled=true;cloudButton.disabled=true;
+  const originalLabel=saveButton.textContent;
+  saveButton.textContent='저장 중…';
+  try{
+   // PNG 렌더링은 동시에 처리하며 서버에는 한 번만 보냅니다.
+   const outputs=await Promise.all(photos.map(createReceiptPng));
+   const names=photos.map((_,i)=>finalImageFilename(i,photos.length));
+   if(!pendingSaveToken)pendingSaveToken='save_'+Date.now().toString(36)+'_'+Math.random().toString(36).slice(2);
+   const data=await cloudRequest('save',{payload:JSON.stringify({...r,photos,outputs,names,baseVersion:cloudVersion,saveToken:pendingSaveToken})});
+   currentId=data.id;cloudVersion=data.baseVersion||data.updated||'';
+   pendingSaveToken='';folderUrl=data.folderUrl||'';
+   // 서버 저장 완료를 즉시 표시. 브라우저의 보조 로컬 보관은 뒤에서 처리합니다.
+   lastCompletedSaveSignature=signature;
+   if(cloudListLoaded){
+    cachedCloudRecords=cachedCloudRecords.filter(x=>x.id!==data.id);
+    cachedCloudRecords.push({id:data.id,name:r.name,approval:r.approval,amount:r.amount,category:r.category,aircraft:r.aircraft,tripDate:r.tripDate,details:r.details,photoCount:data.photoCount,folderUrl:data.folderUrl,submitter:receiptCurrentUser?.name||receiptCurrentUser?.email||'',updated:data.updated||new Date().toISOString()});
+    paintCloudList(data.id);
+   }
+   cloudStatus('저장 완료 · '+data.photoCount+'장 · 중복 저장 방지 적용');
+   saveRecord().catch(e=>console.warn('로컬 보관 실패',e));
+  } finally {saveButton.disabled=false;cloudButton.disabled=false;saveButton.textContent=originalLabel;}
+ });
+});
+$('cloudLoad').addEventListener('click',()=>runCloud('클라우드 불러오기',async()=>{lastCompletedSaveSignature='';const id=$('cloudList').value;if(!id)throw Error('클라우드 저장본을 먼저 선택하세요.');const d=await cloudRequest('load',{id});const r=d.record;currentId=r.id;cloudVersion=r.version||r.updated||'';pendingSaveToken='';fillNames(r.name||'');for(const k of fields)$(k).value=r[k]||'';photos=d.photos|| (d.photo?[d.photo]:[]);selectedPhoto=0;folderUrl=d.folderUrl||r.folderUrl||'';syncPhotos();cloudStatus('클라우드 양식을 불러왔습니다. 필요한 경우 양식 저장을 눌러 기기에도 보관하세요.')}));
 $('cloudDelete').addEventListener('click',()=>runCloud('클라우드 삭제',async()=>{const id=$('cloudList').value;if(!id)throw Error('삭제할 저장본을 선택하세요.');if(!confirm('클라우드 저장본을 영구 삭제하시겠습니까?'))return;await cloudRequest('delete',{id});if(cloudListLoaded){cachedCloudRecords=cachedCloudRecords.filter(x=>x.id!==id);paintCloudList()}cloudStatus('클라우드 저장본 삭제 완료 (서버 호출 1회)')}));
 $('backendUrl').value='https://script.google.com/macros/s/AKfycbxrPy3v5wpemZXx-kyqlA6Dr3L0hybiyTHKFqtRxs3fizPS_Uor1Cno6fiegrQ2OOYHXA/exec';
 $('name').addEventListener('change',()=>{syncSelectedStaff();render()});for(const k of fields)$(k).addEventListener('input',render);
