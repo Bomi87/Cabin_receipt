@@ -141,7 +141,27 @@ header{padding:14px max(22px,calc((100vw - 1380px)/2));background:#142742;box-sh
  .record-actions .btn{font-size:12px}
 }
 @media print{.app-tabs,.top-toolbar,.list-page{display:none!important}}
-</style></head>
+</style>
+<style id="two-column-restore-v2">
+/* Restore desktop editor-left / large-preview-right. All other features retained. */
+@media (min-width: 1021px){
+ .shell{max-width:1600px;padding:18px 24px 60px}
+ .layout:not([hidden]){display:grid!important;grid-template-columns:minmax(390px,510px) minmax(0,1fr)!important;align-items:start!important;gap:22px!important}
+ .layout>.editor,.layout>.preview{width:auto!important;max-width:none!important;min-width:0!important}
+ .layout>.preview{position:sticky!important;top:76px!important}
+ .paper{max-width:none!important}
+ .receipt-grid{grid-template-columns:52% 48%!important;min-height:520px!important}
+ .receipt-photo{min-height:520px!important}
+}
+@media (max-width:1020px){
+ .layout:not([hidden]){display:flex!important;flex-direction:column!important}
+ .layout>.editor,.layout>.preview{width:100%!important}
+}
+/* Hide old management controls in favor of top toolbar and dedicated records tab. */
+.editor .saved,.editor .syncbox{display:none!important}
+.preview .preview-top button,.preview #printBtn,.preview #pngBtn{display:none!important}
+</style>
+</head>
 <body>
 <header>
 <div class="brand">
@@ -447,7 +467,7 @@ header{padding:14px max(22px,calc((100vw - 1380px)/2));background:#142742;box-sh
 <script>
    'use strict';
 let EMPLOYEES=[]; // Google Sheets '구성원정보'에서만 불러옵니다.
-const fields=['approval','amount','category','aircraft','tripDate','details'];const $=id=>document.getElementById(id);const KEY='receiptTemplateSavedV1';let photo='',photos=[],selectedPhoto=0,folderUrl='',currentId='',stream=null,dbPromise=null;let cloudBusy=false;const CLOUD_URL_KEY='receiptFlowCloudUrlV1';
+const fields=['approval','amount','category','aircraft','tripDate','details'];const $=id=>document.getElementById(id);const KEY='receiptTemplateSavedV1';let photo='',photos=[],selectedPhoto=0,folderUrl='',currentId='',stream=null,dbPromise=null;let cloudBusy=false,cloudVersion='',pendingSaveToken='';const CLOUD_URL_KEY='receiptFlowCloudUrlV1';
 function notice(t){$('toast').textContent=t;$('toast').style.display='block';clearTimeout(notice.timer);notice.timer=setTimeout(()=>$('toast').style.display='none',2600)}
 function staffInit(){
  const previousName=$('name').value;
@@ -523,13 +543,13 @@ async function startCamera(){try{if(!navigator.mediaDevices?.getUserMedia)throw 
 function stopCamera(){if(stream){stream.getTracks().forEach(t=>t.stop());stream=null}$('video').srcObject=null;$('cameraOverlay').classList.remove('open')}
 function takePhoto(){const v=$('video');if(!v.videoWidth){notice('카메라 준비 중입니다.');return}if(photos.length>=8){stopCamera();notice('최대 8장입니다.');return}const can=document.createElement('canvas'),s=Math.min(1,1400/Math.max(v.videoWidth,v.videoHeight));can.width=Math.round(v.videoWidth*s);can.height=Math.round(v.videoHeight*s);can.getContext('2d').drawImage(v,0,0,can.width,can.height);photos.push(can.toDataURL('image/jpeg',.7));selectedPhoto=photos.length-1;stopCamera();syncPhotos()}
 function saved(){try{return JSON.parse(localStorage.getItem(KEY)||'[]')}catch{return []}}function setSaved(x){localStorage.setItem(KEY,JSON.stringify(x))}
-function record(){return{id:currentId||('r'+Date.now()),dept:$('dept').value,name:selectedName(),...Object.fromEntries(fields.map(id=>[id,$(id).value])),folderUrl,updated:new Date().toISOString()}}
+function record(){return{id:currentId||('r'+Date.now().toString(36)+Math.random().toString(36).slice(2)),dept:$('dept').value,name:selectedName(),...Object.fromEntries(fields.map(id=>[id,$(id).value])),folderUrl,baseVersion:cloudVersion,updated:new Date().toISOString()}}
 function refreshSaved(){const rows=saved().sort((a,b)=>b.updated.localeCompare(a.updated));$('savedList').innerHTML='<option value="">새 양식 / 저장본 선택</option>'+rows.map(r=>`<option value="${esc(r.id)}">${esc(r.name||'미지정')} · ${esc(r.approval||'승인번호 없음')} · ${esc((r.updated||'').slice(0,10))}</option>`).join('');$('savedList').value=currentId}
 function openDb(){return dbPromise||(dbPromise=new Promise((res,rej)=>{const q=indexedDB.open('receiptTemplatePhotosV1',1);q.onupgradeneeded=()=>q.result.createObjectStore('photos');q.onsuccess=()=>res(q.result);q.onerror=()=>rej(q.error)}))}
 async function photoOp(id,value,mode){const db=await openDb();return new Promise((res,rej)=>{const tx=db.transaction('photos',mode==='get'?'readonly':'readwrite'),s=tx.objectStore('photos');const r=mode==='get'?s.get(id):mode==='delete'?s.delete(id):s.put(value,id);r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)})}
 async function saveRecord(){const r=record();try{await photoOp(r.id,photos,'put');const list=saved().filter(e=>e.id!==r.id);list.push(r);setSaved(list);currentId=r.id;refreshSaved();notice('양식을 저장했습니다.')}catch(e){notice('저장 실패: 저장 공간 또는 브라우저 설정을 확인하세요.')}}
-function clearForm(){currentId='';fillNames();for(const id of fields)$(id).value='';photos=[];selectedPhoto=0;folderUrl='';syncPhotos();refreshSaved();render()}
-async function loadRecord(id){if(!id)return clearForm();const r=saved().find(x=>x.id===id);if(!r)return;currentId=id;fillNames(r.name||'');for(const k of fields)$(k).value=r[k]||'';try{{const savedPhotos=await photoOp(id,null,'get');photos=Array.isArray(savedPhotos)?savedPhotos:(savedPhotos?[savedPhotos]:[]);selectedPhoto=0;folderUrl=r.folderUrl||'';syncPhotos()}}catch{photos=[];selectedPhoto=0;folderUrl='';syncPhotos()}render();refreshSaved();notice('저장된 양식을 불러왔습니다.')}
+function clearForm(){currentId='';cloudVersion='';pendingSaveToken='';fillNames();for(const id of fields)$(id).value='';photos=[];selectedPhoto=0;folderUrl='';syncPhotos();refreshSaved();render()}
+async function loadRecord(id){if(!id)return clearForm();const r=saved().find(x=>x.id===id);if(!r)return;currentId=id;cloudVersion=r.baseVersion||'';pendingSaveToken='';fillNames(r.name||'');for(const k of fields)$(k).value=r[k]||'';try{{const savedPhotos=await photoOp(id,null,'get');photos=Array.isArray(savedPhotos)?savedPhotos:(savedPhotos?[savedPhotos]:[]);selectedPhoto=0;folderUrl=r.folderUrl||'';syncPhotos()}}catch{photos=[];selectedPhoto=0;folderUrl='';syncPhotos()}render();refreshSaved();notice('저장된 양식을 불러왔습니다.')}
 async function deleteRecord(){if(!currentId){notice('삭제할 저장본을 선택하세요.');return}if(!confirm('선택한 저장본을 삭제하시겠습니까?'))return;try{await photoOp(currentId,null,'delete');setSaved(saved().filter(x=>x.id!==currentId));clearForm();notice('삭제했습니다.')}catch(e){notice('삭제하지 못했습니다.')}}
 // Google Apps Script HTML form bridge: avoids GitHub Pages-to-Apps Script CORS restrictions.
 function backendAddress(){const url=$('backendUrl').value.trim();if(!/^https:\/\/script\.google\.com\/macros\/s\/[\w-]+\/exec$/.test(url))throw Error('유효한 Apps Script /exec URL을 입력하세요.');return url}
@@ -601,8 +621,8 @@ $('downloadSelectedZip').addEventListener('click',()=>runCloud('ZIP 생성',asyn
  const a=document.createElement('a');a.href=data.url;a.target='_blank';a.rel='noopener';a.textContent='ZIP 다운로드: '+data.name+' ('+data.count+'건 / '+data.files+'개 PNG)';
  $('zipResult').replaceChildren(a);cloudStatus('ZIP 준비 완료 · 아래 링크를 눌러 다운로드하세요.');
 }));
-$('cloudSave').addEventListener('click',()=>runCloud('클라우드 저장',async()=>{const r=record();if(!r.name)throw Error('이름을 선택하세요.');if(!photos.length)throw Error('영수증 사진을 첨부하세요.');if(!r.approval.trim())throw Error('승인번호를 입력하세요.');const outputs=await Promise.all(photos.map(createReceiptPng));const names=photos.map((_,i)=>finalImageFilename(i,photos.length));const data=await cloudRequest('save',{payload:JSON.stringify({...r,photos,outputs,names})});currentId=data.id;folderUrl=data.folderUrl||'';await saveRecord();if(cloudListLoaded){cachedCloudRecords=cachedCloudRecords.filter(x=>x.id!==data.id);cachedCloudRecords.push({id:data.id,name:r.name,approval:r.approval,name:r.name,amount:r.amount,category:r.category,aircraft:r.aircraft,tripDate:r.tripDate,details:r.details,photoCount:data.photoCount,folderUrl:data.folderUrl,updated:data.updated||new Date().toISOString()});paintCloudList(data.id)}cloudStatus('클라우드 저장 완료 · '+data.photoCount+'장 · 서버 호출 1회 · 폴더 링크가 위에 표시됩니다.')}));
-$('cloudLoad').addEventListener('click',()=>runCloud('클라우드 불러오기',async()=>{const id=$('cloudList').value;if(!id)throw Error('클라우드 저장본을 먼저 선택하세요.');const d=await cloudRequest('load',{id});const r=d.record;currentId=r.id;fillNames(r.name||'');for(const k of fields)$(k).value=r[k]||'';photos=d.photos|| (d.photo?[d.photo]:[]);selectedPhoto=0;folderUrl=d.folderUrl||r.folderUrl||'';syncPhotos();cloudStatus('클라우드 양식을 불러왔습니다. 필요한 경우 양식 저장을 눌러 기기에도 보관하세요.')}));
+$('cloudSave').addEventListener('click',()=>runCloud('클라우드 저장',async()=>{const r=record();if(!currentId)currentId=r.id;if(!r.name)throw Error('이름을 선택하세요.');if(!photos.length)throw Error('영수증 사진을 첨부하세요.');if(!r.approval.trim())throw Error('승인번호를 입력하세요.');const outputs=await Promise.all(photos.map(createReceiptPng));const names=photos.map((_,i)=>finalImageFilename(i,photos.length));if(!pendingSaveToken)pendingSaveToken='save_'+Date.now().toString(36)+'_'+Math.random().toString(36).slice(2);const data=await cloudRequest('save',{payload:JSON.stringify({...r,photos,outputs,names,baseVersion:cloudVersion,saveToken:pendingSaveToken})});currentId=data.id;cloudVersion=data.baseVersion||data.updated||'';pendingSaveToken='';folderUrl=data.folderUrl||'';await saveRecord();if(cloudListLoaded){cachedCloudRecords=cachedCloudRecords.filter(x=>x.id!==data.id);cachedCloudRecords.push({id:data.id,name:r.name,approval:r.approval,name:r.name,amount:r.amount,category:r.category,aircraft:r.aircraft,tripDate:r.tripDate,details:r.details,photoCount:data.photoCount,folderUrl:data.folderUrl,updated:data.updated||new Date().toISOString()});paintCloudList(data.id)}cloudStatus('클라우드 저장 완료 · '+data.photoCount+'장 · 서버 호출 1회 · 폴더 링크가 위에 표시됩니다.')}));
+$('cloudLoad').addEventListener('click',()=>runCloud('클라우드 불러오기',async()=>{const id=$('cloudList').value;if(!id)throw Error('클라우드 저장본을 먼저 선택하세요.');const d=await cloudRequest('load',{id});const r=d.record;currentId=r.id;cloudVersion=r.version||r.updated||'';pendingSaveToken='';fillNames(r.name||'');for(const k of fields)$(k).value=r[k]||'';photos=d.photos|| (d.photo?[d.photo]:[]);selectedPhoto=0;folderUrl=d.folderUrl||r.folderUrl||'';syncPhotos();cloudStatus('클라우드 양식을 불러왔습니다. 필요한 경우 양식 저장을 눌러 기기에도 보관하세요.')}));
 $('cloudDelete').addEventListener('click',()=>runCloud('클라우드 삭제',async()=>{const id=$('cloudList').value;if(!id)throw Error('삭제할 저장본을 선택하세요.');if(!confirm('클라우드 저장본을 영구 삭제하시겠습니까?'))return;await cloudRequest('delete',{id});if(cloudListLoaded){cachedCloudRecords=cachedCloudRecords.filter(x=>x.id!==id);paintCloudList()}cloudStatus('클라우드 저장본 삭제 완료 (서버 호출 1회)')}));
 $('backendUrl').value='https://script.google.com/macros/s/AKfycbxrPy3v5wpemZXx-kyqlA6Dr3L0hybiyTHKFqtRxs3fizPS_Uor1Cno6fiegrQ2OOYHXA/exec';
 $('name').addEventListener('change',()=>{syncSelectedStaff();render()});for(const k of fields)$(k).addEventListener('input',render);
@@ -621,7 +641,7 @@ function showCabinPage(page){
 $('tabCreate').addEventListener('click',()=>showCabinPage('create'));
 $('tabRecords').addEventListener('click',()=>showCabinPage('records'));
 $('topNew').addEventListener('click',()=>{if(photos.length || $('approval').value.trim()){if(!confirm('입력 중인 내용을 지우고 새 양식을 시작하시겠습니까?'))return;}clearForm();window.scrollTo({top:0,behavior:'smooth'});});
-$('topSave').addEventListener('click',()=>{$('cloudSave').click();});
+$('topSave').addEventListener('click',()=>{if($('topSave').disabled)return;$('cloudSave').click();});
 $('jumpRefresh').addEventListener('click',()=>{$('cloudRefresh').click();});
 </script>
 </body>
