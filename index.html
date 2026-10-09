@@ -161,6 +161,16 @@ header{padding:14px max(22px,calc((100vw - 1380px)/2));background:#142742;box-sh
 .editor .saved,.editor .syncbox{display:none!important}
 .preview .preview-top button,.preview #printBtn,.preview #pngBtn{display:none!important}
 </style>
+<style id="receipt-column-alignment-fix">
+/* Make all upper label/value boundaries exactly match the note rows. */
+.receipt-info{--note-section-width:25%;--note-label-width:38%;}
+.receipt-info>.line{grid-template-columns:53.5% 46.5%!important;}
+.receipt-info>.noteblock{grid-template-columns:25% 75%!important;}
+.receipt-info .note-row{grid-template-columns:38% 62%!important;}
+/* Uniform borders make the right-hand cells form one continuous grid. */
+.receipt-info .line,.receipt-info .note-row{min-width:0;}
+@media(max-width:430px){.receipt-info>.line{grid-template-columns:53.5% 46.5%!important;}.receipt-info>.noteblock{grid-template-columns:25% 75%!important;}.receipt-info .note-row{grid-template-columns:38% 62%!important;}}
+</style>
 </head>
 <body>
 <header>
@@ -269,7 +279,7 @@ header{padding:14px max(22px,calc((100vw - 1380px)/2));background:#142742;box-sh
 </label>
 <label class="field">
          세부내역
-         <input id="details" placeholder="케이터링_" type="text"/>
+         <input id="details" placeholder="케이터링_" value="케이터링_" type="text"/>
 </label>
 </div>
 </div>
@@ -516,15 +526,50 @@ function wrapCanvasText(ctx,value,x,y,maxWidth,lineH,maxLines=3){
  if(line)ctx.fillText(line,x,y+lines*lineH);
 }
 async function createReceiptPng(src){
- const im=await decodeImage(src),c=document.createElement('canvas');c.width=1200;c.height=760;
- const g=c.getContext('2d');g.fillStyle='#fff';g.fillRect(0,0,1200,760);g.strokeStyle='#1b2530';g.lineWidth=2;
- g.strokeRect(20,20,1160,720);g.beginPath();g.moveTo(610,20);g.lineTo(610,740);g.stroke();
- // 원본 비율 유지하여 영수증 전체가 보이도록 표시
- const ratio=Math.min(560/im.width,680/im.height),w=im.width*ratio,h=im.height*ratio;
- g.drawImage(im,305-w/2,380-h/2,w,h);
- g.fillStyle='#18293b';g.font='bold 30px sans-serif';g.fillText($('name').value||'이름없음',640,74);
- const rows=[['승인번호',$('approval').value||'N-A'],['금액 (원)',Number($('amount').value||0).toLocaleString('ko-KR')],['구분',$('category').value],['기종',$('aircraft').value],['트립시작일',tripDisplay($('tripDate').value)],['세부내역',$('details').value]];
- let y=110;rows.forEach(([label,val],idx)=>{const height=idx===5?170:92;g.strokeStyle='#aeb9c4';g.beginPath();g.moveTo(610,y);g.lineTo(1180,y);g.stroke();g.fillStyle='#536579';g.font='21px sans-serif';g.fillText(label,638,y+30);g.fillStyle='#18293b';g.font='bold 26px sans-serif';wrapCanvasText(g,val||'—',640,y+66,514,32,idx===5?3:1);y+=height});
+ const im=await decodeImage(src),c=document.createElement('canvas');
+ c.width=1600;c.height=940;
+ const g=c.getContext('2d');
+ const left=24,top=24,right=1576,bottom=916,divide=832;
+ const infoWidth=right-divide,upperLabelEnd=divide+infoWidth*.535;
+ const noteFirstEnd=divide+infoWidth*.25;
+ const noteSecondEnd=noteFirstEnd+(infoWidth*.75)*.38;
+ const topRowHeight=116,noteTop=top+3*topRowHeight;
+ const noteRowHeight=(bottom-noteTop)/4;
+ g.fillStyle='#fff';g.fillRect(0,0,c.width,c.height);
+ const ratio=Math.min((divide-left-32)/im.width,(bottom-top-32)/im.height);
+ const w=im.width*ratio,h=im.height*ratio;
+ g.drawImage(im,(left+divide-w)/2,(top+bottom-h)/2,w,h);
+ g.strokeStyle='#202b39';g.lineWidth=2;
+ function line(x1,y1,x2,y2){g.beginPath();g.moveTo(x1,y1);g.lineTo(x2,y2);g.stroke();}
+ function label(text,x0,y0,x1,y1,fontsize=26){
+   g.fillStyle='#f0f2f5';g.fillRect(x0+1,y0+1,x1-x0-2,y1-y0-2);
+   g.fillStyle='#263b55';g.font='bold '+fontsize+'px sans-serif';g.textAlign='center';
+   g.textBaseline='middle';g.fillText(text,(x0+x1)/2,(y0+y1)/2);g.textAlign='left';g.textBaseline='alphabetic';
+ }
+ function value(text,x0,y0,x1,y1,fontsize=29){
+   g.fillStyle='#18293b';g.font='bold '+fontsize+'px sans-serif';
+   g.textBaseline='middle';
+   const lines=String(text||'—');
+   wrapCanvasText(g,lines,x0+18,(y0+y1)/2,x1-x0-32,34,3);
+   g.textBaseline='alphabetic';
+ }
+ const person=selectedName()||'이름없음';
+ const main=[['이름',person],['승인번호',$('approval').value||'—'],['금액 (원)',Number($('amount').value||0).toLocaleString('ko-KR')]];
+ main.forEach(([title,v],i)=>{let y0=top+i*topRowHeight,y1=y0+topRowHeight;
+   label(title,divide,y0,upperLabelEnd,y1);value(v,upperLabelEnd,y0,right,y1);
+   if(i<2)line(divide,y1,right,y1);
+ });
+ label('비고',divide,noteTop,noteFirstEnd,bottom,27);
+ const notes=[['구분',$('category').value],['기종',$('aircraft').value],['트립시작일',tripDisplay($('tripDate').value)],['세부내역',$('details').value]];
+ notes.forEach(([title,v],i)=>{const y0=noteTop+i*noteRowHeight,y1=y0+noteRowHeight;
+   label(title,noteFirstEnd,y0,noteSecondEnd,y1,23);
+   value(v,noteSecondEnd,y0,right,y1,26);
+   if(i<3)line(noteFirstEnd,y1,right,y1);
+ });
+ line(divide,top,divide,bottom);line(upperLabelEnd,top,upperLabelEnd,noteTop);
+ line(divide,noteTop,right,noteTop);line(noteFirstEnd,noteTop,noteFirstEnd,bottom);
+ line(noteSecondEnd,noteTop,noteSecondEnd,bottom);
+ g.strokeRect(left,top,right-left,bottom-top);
  return c.toDataURL('image/png');
 }
 async function downloadReceiptPng(){
@@ -548,7 +593,7 @@ function refreshSaved(){const rows=saved().sort((a,b)=>b.updated.localeCompare(a
 function openDb(){return dbPromise||(dbPromise=new Promise((res,rej)=>{const q=indexedDB.open('receiptTemplatePhotosV1',1);q.onupgradeneeded=()=>q.result.createObjectStore('photos');q.onsuccess=()=>res(q.result);q.onerror=()=>rej(q.error)}))}
 async function photoOp(id,value,mode){const db=await openDb();return new Promise((res,rej)=>{const tx=db.transaction('photos',mode==='get'?'readonly':'readwrite'),s=tx.objectStore('photos');const r=mode==='get'?s.get(id):mode==='delete'?s.delete(id):s.put(value,id);r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)})}
 async function saveRecord(){const r=record();try{await photoOp(r.id,photos,'put');const list=saved().filter(e=>e.id!==r.id);list.push(r);setSaved(list);currentId=r.id;refreshSaved();notice('양식을 저장했습니다.')}catch(e){notice('저장 실패: 저장 공간 또는 브라우저 설정을 확인하세요.')}}
-function clearForm(){currentId='';cloudVersion='';pendingSaveToken='';fillNames();for(const id of fields)$(id).value='';photos=[];selectedPhoto=0;folderUrl='';syncPhotos();refreshSaved();render()}
+function clearForm(){const category=$('category').value;const aircraft=$('aircraft').value;currentId='';cloudVersion='';pendingSaveToken='';fillNames();for(const id of fields)$(id).value='';$('category').value=category;$('aircraft').value=aircraft;$('details').value='케이터링_';photos=[];selectedPhoto=0;folderUrl='';syncPhotos();refreshSaved();render()}
 async function loadRecord(id){if(!id)return clearForm();const r=saved().find(x=>x.id===id);if(!r)return;currentId=id;cloudVersion=r.baseVersion||'';pendingSaveToken='';fillNames(r.name||'');for(const k of fields)$(k).value=r[k]||'';try{{const savedPhotos=await photoOp(id,null,'get');photos=Array.isArray(savedPhotos)?savedPhotos:(savedPhotos?[savedPhotos]:[]);selectedPhoto=0;folderUrl=r.folderUrl||'';syncPhotos()}}catch{photos=[];selectedPhoto=0;folderUrl='';syncPhotos()}render();refreshSaved();notice('저장된 양식을 불러왔습니다.')}
 async function deleteRecord(){if(!currentId){notice('삭제할 저장본을 선택하세요.');return}if(!confirm('선택한 저장본을 삭제하시겠습니까?'))return;try{await photoOp(currentId,null,'delete');setSaved(saved().filter(x=>x.id!==currentId));clearForm();notice('삭제했습니다.')}catch(e){notice('삭제하지 못했습니다.')}}
 // Google Apps Script HTML form bridge: avoids GitHub Pages-to-Apps Script CORS restrictions.
