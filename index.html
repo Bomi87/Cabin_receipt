@@ -29,7 +29,7 @@
 :root{--blue:#235fc8;--ink:#1b2b43;--line:#e1e7f0;--bg:#f1f4f9}
 html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
 body{line-height:1.5}
-header{padding:14px max(22px,calc((100vw - 1380px)/2));background:#142742;box-shadow:0 2px 14px #10243c10}
+header{padding:14px max(22px,calc((100vw - 1380px)/2));background:#142742;box-shadow:0 2px 14px #10243c10;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
 .brand{display:flex;align-items:center;gap:12px}.brand-icon{font-size:24px;display:grid;place-items:center;width:42px;height:42px;border-radius:12px;background:#ffffff1c;color:#cfe1ff}
 .brand strong,.brand small{display:block}.brand strong{font-size:15px;letter-spacing:.055em}.brand small{font-size:12px;font-weight:450;color:#d0def0;margin-top:1px}
 .shell{max-width:1380px;padding:25px 24px}.intro{margin:0 0 17px}
@@ -215,6 +215,7 @@ header{padding:14px max(22px,calc((100vw - 1380px)/2));background:#142742;box-sh
      </small>
 </span>
 </div>
+<div id="receiptAccountBar" style="display:none;align-items:center;gap:9px;margin-left:auto;flex-wrap:wrap"><span id="receiptAccountEmail" style="font-size:12px;color:#f1f5f9;word-break:break-all"></span><button id="receiptSwitchAccount" type="button" style="border:1px solid #f4b8a8;background:#fff7ed;color:#9a3412;border-radius:12px;padding:9px 13px;cursor:pointer;font-weight:750;font-size:13px">계정 변경</button></div>
 </header>
 <main class="shell"><nav aria-label="화면 전환" class="app-tabs"><button class="tab-btn active" id="tabCreate" type="button">영수증 작성</button><button class="tab-btn" id="tabRecords" type="button">저장된 영수증 목록</button></nav>
 
@@ -510,18 +511,29 @@ let receiptAuthenticated=false;
 let receiptAuthInProgress=false;
 const RECEIPT_SESSION_KEY='cabinReceiptSignedSessionV1';
 function receiptShowAuthStatus(message){document.getElementById('receiptAuthStatus').textContent=message;}
+// Switching accounts explicitly revokes the old server session before starting a new login.
+async function receiptSwitchAccount(){
+ const btn=document.getElementById('receiptSwitchAccount');if(btn)btn.disabled=true;
+ try{if(receiptSessionToken)await cloudRequest('logout');}
+ catch(e){alert('기존 서버 세션을 폐기하지 못했습니다. 네트워크를 확인하고 다시 시도해 주세요. ('+e.message+')');if(btn)btn.disabled=false;return;}
+ try{window.google?.accounts?.id?.disableAutoSelect();window.google?.accounts?.id?.cancel();}catch(_){ }
+ receiptSignOut();if(btn)btn.disabled=false;
+}
 function receiptSignOut(){
  receiptIdToken='';receiptSessionToken='';receiptCurrentUser=null;receiptAuthenticated=false;
+ document.getElementById('receiptAccountBar').style.display='none';
  try{localStorage.removeItem(RECEIPT_SESSION_KEY);}catch(_){ }
  document.getElementById('receiptProtectedRoot').style.display='none';
  document.getElementById('receiptAuthScreen').style.display='flex';
- receiptShowAuthStatus('Google 계정으로 다시 로그인해 주세요.');
- if(window.google?.accounts?.id)google.accounts.id.initialize({client_id:RECEIPT_GOOGLE_CLIENT_ID,callback:receiptHandleGoogleCredential,auto_select:true,cancel_on_tap_outside:false});
+ receiptShowAuthStatus('다른 Google 계정을 선택해 로그인해 주세요.');
+ if(window.google?.accounts?.id)google.accounts.id.initialize({client_id:RECEIPT_GOOGLE_CLIENT_ID,callback:receiptHandleGoogleCredential,auto_select:false,cancel_on_tap_outside:false});
  receiptRenderGoogleButton();
 }
 async function receiptFinishAuth(user){
  receiptCurrentUser={email:user.email,name:user.name,role:user.role};
  receiptAuthenticated=true;
+ document.getElementById('receiptAccountEmail').textContent='로그인: '+receiptCurrentUser.email;
+ document.getElementById('receiptAccountBar').style.display='flex';
  document.getElementById('receiptProtectedRoot').style.display='block';
  document.getElementById('receiptAuthScreen').style.display='none';
  if(typeof connectAndLoadStaff==='function')await connectAndLoadStaff();
@@ -568,6 +580,7 @@ async function receiptStartAuth(){
  receiptRenderGoogleButton();
  google.accounts.id.prompt();
 }
+document.getElementById('receiptSwitchAccount').addEventListener('click',receiptSwitchAccount);
 window.addEventListener('load',receiptStartAuth);
    'use strict';
 let EMPLOYEES=[]; // Google Sheets '구성원정보'에서만 불러옵니다.
