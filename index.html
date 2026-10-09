@@ -504,11 +504,28 @@ header{padding:14px max(22px,calc((100vw - 1380px)/2));background:#142742;box-sh
 // The backend verifies the Google credential separately on every request.
 const RECEIPT_GOOGLE_CLIENT_ID='434108168386-jn8hp4mflhn68n98n6m9r1nm6iv7b3qe.apps.googleusercontent.com';
 let receiptIdToken='';
+let receiptSessionToken='';
 let receiptCurrentUser=null;
 let receiptAuthenticated=false;
 let receiptAuthInProgress=false;
+const RECEIPT_SESSION_KEY='cabinReceiptSignedSessionV1';
 function receiptShowAuthStatus(message){document.getElementById('receiptAuthStatus').textContent=message;}
-function receiptSignOut(){receiptIdToken='';receiptCurrentUser=null;receiptAuthenticated=false;document.getElementById('receiptProtectedRoot').style.display='none';document.getElementById('receiptAuthScreen').style.display='flex';receiptShowAuthStatus('Google 계정으로 다시 로그인해 주세요.');receiptRenderGoogleButton();}
+function receiptSignOut(){
+ receiptIdToken='';receiptSessionToken='';receiptCurrentUser=null;receiptAuthenticated=false;
+ try{localStorage.removeItem(RECEIPT_SESSION_KEY);}catch(_){ }
+ document.getElementById('receiptProtectedRoot').style.display='none';
+ document.getElementById('receiptAuthScreen').style.display='flex';
+ receiptShowAuthStatus('Google 계정으로 다시 로그인해 주세요.');
+ if(window.google?.accounts?.id)google.accounts.id.initialize({client_id:RECEIPT_GOOGLE_CLIENT_ID,callback:receiptHandleGoogleCredential,auto_select:true,cancel_on_tap_outside:false});
+ receiptRenderGoogleButton();
+}
+async function receiptFinishAuth(user){
+ receiptCurrentUser={email:user.email,name:user.name,role:user.role};
+ receiptAuthenticated=true;
+ document.getElementById('receiptProtectedRoot').style.display='block';
+ document.getElementById('receiptAuthScreen').style.display='none';
+ if(typeof connectAndLoadStaff==='function')await connectAndLoadStaff();
+}
 async function receiptHandleGoogleCredential(response){
  if(receiptAuthInProgress)return;
  receiptAuthInProgress=true;
@@ -516,16 +533,16 @@ async function receiptHandleGoogleCredential(response){
  try{
   if(!response||!response.credential)throw Error('Google 로그인 정보가 없습니다.');
   receiptIdToken=response.credential;
-  // Use the same bridge as normal requests; server authorizes this token before replying.
-  const user=await cloudRequest('auth');
-  receiptCurrentUser=user;
-  receiptAuthenticated=true;
-  document.getElementById('receiptProtectedRoot').style.display='block';
-  document.getElementById('receiptAuthScreen').style.display='none';
-  // Load staff only after successful authorization.
-  if(typeof connectAndLoadStaff==='function')await connectAndLoadStaff();
- }catch(err){receiptAuthenticated=false;receiptIdToken='';receiptShowAuthStatus('접근 실패: '+err.message);receiptRenderGoogleButton();}
- finally{receiptAuthInProgress=false;}
+  const user=await cloudRequest('auth'); // Login checked by portal's ApprovedUsers
+  if(!user.sessionToken||!user.expiresAt)throw Error('새 백엔드 배포가 필요합니다.');
+  receiptSessionToken=user.sessionToken;
+  try{localStorage.setItem(RECEIPT_SESSION_KEY,JSON.stringify({token:user.sessionToken,expiresAt:user.expiresAt}));}catch(_){ }
+  receiptIdToken=''; // Never retain Google ID token after exchange.
+  await receiptFinishAuth(user);
+ }catch(err){
+  receiptAuthenticated=false;receiptIdToken='';receiptSessionToken='';
+  receiptShowAuthStatus('접근 실패: '+err.message);receiptRenderGoogleButton();
+ }finally{receiptAuthInProgress=false;}
 }
 function receiptRenderGoogleButton(){
  const el=document.getElementById('receiptGoogleButton');
@@ -533,9 +550,21 @@ function receiptRenderGoogleButton(){
  el.replaceChildren();
  google.accounts.id.renderButton(el,{theme:'outline',size:'large',width:270,text:'continue_with',shape:'pill'});
 }
-function receiptStartAuth(){
+async function receiptStartAuth(){
+ receiptShowAuthStatus('기존 로그인 세션을 확인하고 있습니다...');
+ let saved=null;
+ try{saved=JSON.parse(localStorage.getItem(RECEIPT_SESSION_KEY)||'null');}catch(_){ }
+ if(saved?.token&&Number(saved.expiresAt)>Date.now()){
+  receiptSessionToken=saved.token;
+  try{
+   const user=await cloudRequest('session'); // Server validates HMAC and 24-hour expiry.
+   await receiptFinishAuth(user);
+   return;
+  }catch(_){receiptSessionToken='';try{localStorage.removeItem(RECEIPT_SESSION_KEY);}catch(__){} }
+ }
  if(!window.google?.accounts?.id){setTimeout(receiptStartAuth,300);return;}
  google.accounts.id.initialize({client_id:RECEIPT_GOOGLE_CLIENT_ID,callback:receiptHandleGoogleCredential,auto_select:true,cancel_on_tap_outside:false});
+ receiptShowAuthStatus('Google 계정으로 로그인해 주세요.');
  receiptRenderGoogleButton();
  google.accounts.id.prompt();
 }
@@ -670,7 +699,7 @@ function cloudRequest(action,body={}){
  return new Promise((resolve,reject)=>{
   const iframe=document.createElement('iframe');iframe.name='bridge_'+requestId;iframe.hidden=true;
   const form=document.createElement('form');form.method='POST';form.action=url;form.target=iframe.name;form.hidden=true;
-  const params={action,requestId,idToken:receiptIdToken,...body};for(const [k,v] of Object.entries(params)){const i=document.createElement('input');i.type='hidden';i.name=k;i.value=String(v??'');form.append(i)}
+  const params={action,requestId,idToken:receiptIdToken,sessionToken:receiptSessionToken,...body};for(const [k,v] of Object.entries(params)){const i=document.createElement('input');i.type='hidden';i.name=k;i.value=String(v??'');form.append(i)}
   let done=false;const finish=()=>{if(done)return;done=true;clearTimeout(timer);window.removeEventListener('message',onMessage);form.remove();iframe.remove()};
   const timer=setTimeout(()=>{finish();reject(Error('Apps Script 응답을 받지 못했습니다(30초). /exec 주소를 시크릿 창에서 직접 열었을 때 Google 로그인이 나타나면 배포 권한 문제입니다. [배포 관리 → 새 버전, 실행 사용자: 나, 액세스: 모든 사용자]로 수정하세요.'))},30000);
   function onMessage(e){const m=e.data;if(!m||m.app!=='receipt-template-bridge-v1'||m.requestId!==requestId)return;
@@ -678,7 +707,7 @@ function cloudRequest(action,body={}){
    // HTMLService can nest its postMessage sender in an internal iframe; e.source may differ.
    // Trust only Google script origins, the unpredictable requestId, and the app marker.
    if(!/^https:\/\/([a-z0-9-]+\.)*googleusercontent\.com$/i.test(e.origin)&&e.origin!=='https://script.google.com')return;
-   finish();if(m.ok)resolve(m.data);else {if(/Google 로그인|승인되지 않은|사용 권한/.test(String(m.error||'')))setTimeout(receiptSignOut,0);reject(Error(m.error||'요청 실패'))}}
+   finish();if(m.ok)resolve(m.data);else {if(/Google 로그인|승인되지 않은|사용 권한|로그인 세션/.test(String(m.error||'')))setTimeout(receiptSignOut,0);reject(Error(m.error||'요청 실패'))}}
   window.addEventListener('message',onMessage);document.body.append(iframe,form);form.submit();
  });
 }
