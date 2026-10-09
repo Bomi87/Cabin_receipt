@@ -493,7 +493,6 @@ input:not([type=hidden]):not([type=file]),select,textarea,
 <div id="toast">
 </div>
 </div>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.2/jspdf.umd.min.js"></script>
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 <script>
 // Shared ApprovedUsers / Google Identity Services authorization.
@@ -676,30 +675,30 @@ async function createReceiptPng(src){
 }
 async function downloadReceiptPng(){
  if(!photos.length){notice('영수증 사진을 추가하세요.');return;}
- if(!confirm('트립시작일 '+(tripDisplay($('tripDate').value))+'이 맞습니까?'))return;
- for(let i=0;i<photos.length;i++){
-  const url=await createReceiptPng(photos[i]);const a=document.createElement('a');a.download=finalImageFilename(i,photos.length);a.href=url;document.body.append(a);a.click();a.remove();
- }
- notice('완성 양식 PNG '+photos.length+'개 다운로드');
+ if(!confirm('트립시작일 '+tripDisplay($('tripDate').value)+'이 맞습니까?'))return;
+ const url=await createCombinedReceiptPng();
+ const a=document.createElement('a');a.download=combinedReceiptFilename();a.href=url;
+ document.body.append(a);a.click();a.remove();
+ notice('완성 양식 PNG 1개 다운로드 · '+photos.length+'개 구역');
 }
 
-async function createReceiptPdf(){
- if(!window.jspdf || !window.jspdf.jsPDF)throw Error('PDF 생성 모듈을 불러오지 못했습니다. 인터넷 연결을 확인한 뒤 새로고침하세요.');
+// 사진 N장 × 1페이지 구성을 세로로 합친 단일 PNG (최대 8구역).
+async function createCombinedReceiptPng(){
  if(!photos.length || photos.length>8)throw Error('사진은 1~8장을 첨부해야 합니다.');
- const pdf=new window.jspdf.jsPDF({orientation:'landscape',unit:'pt',format:[1600,940],compress:true});
+ const canvas=document.createElement('canvas');
+ canvas.width=1600;canvas.height=940*photos.length;
+ const ctx=canvas.getContext('2d',{alpha:false});
+ if(!ctx)throw Error('이미지 캔버스를 생성하지 못했습니다.');
+ ctx.fillStyle='#ffffff';ctx.fillRect(0,0,canvas.width,canvas.height);
  for(let i=0;i<photos.length;i++){
-  if(i)pdf.addPage([1600,940],'landscape');
-  // Current receipt layout renderer is reused unchanged, but only ONE PDF is exported.
-  const png=await createReceiptPng(photos[i]);
-  const im=await decodeImage(png),canvas=document.createElement('canvas');
-  canvas.width=1600;canvas.height=940;
-  canvas.getContext('2d').drawImage(im,0,0,1600,940);
-  const jpeg=canvas.toDataURL('image/jpeg',0.86);
-  pdf.addImage(jpeg,'JPEG',0,0,1600,940,undefined,'FAST');
+  const page=await createReceiptPng(photos[i]);
+  const img=await decodeImage(page);
+  ctx.drawImage(img,0,i*940,1600,940);
  }
- return 'data:application/pdf;base64,'+pdf.output('datauristring').split(',')[1];
+ try{return canvas.toDataURL('image/png');}
+ catch(e){throw Error('PNG 생성에 실패했습니다. 사진의 크기를 줄여 다시 시도하세요.');}
 }
-function receiptPdfFilename(){return fileBaseName()+'.pdf'}
+function combinedReceiptFilename(){return fileBaseName()+'.png'}
 function resizePhoto(file){return new Promise((resolve,reject)=>{if(!file.type.startsWith('image/'))return reject(Error('이미지 파일만 선택할 수 있습니다.'));const img=new Image(),url=URL.createObjectURL(file);img.onload=()=>{const s=Math.min(1,1400/Math.max(img.naturalWidth,img.naturalHeight)),c=document.createElement('canvas');c.width=Math.round(img.naturalWidth*s);c.height=Math.round(img.naturalHeight*s);c.getContext('2d').drawImage(img,0,0,c.width,c.height);URL.revokeObjectURL(url);resolve(c.toDataURL('image/jpeg',.7))};img.onerror=()=>{URL.revokeObjectURL(url);reject(Error('사진을 읽지 못했습니다.'))};img.src=url})}
 async function readPhotos(files){try{for(const f of files){if(photos.length>=8)throw Error('한 건당 사진은 최대 8장입니다.');photos.push(await resizePhoto(f));}selectedPhoto=Math.max(0,photos.length-1);syncPhotos();notice('첨부 '+photos.length+'장')}catch(e){notice(e.message)}}
 function readPhoto(file){return readPhotos(file?[file]:[])}
@@ -880,13 +879,14 @@ $('cloudSave').addEventListener('click',()=>{
   saveButton.textContent='저장 중…';
   try{
    // PNG 렌더링은 동시에 처리하며 서버에는 한 번만 보냅니다.
-   const pdfData=await createReceiptPdf();
-   const pdfName=receiptPdfFilename();
+   const combinedPng=await createCombinedReceiptPng();
+   const outputs=[combinedPng];
+   const names=[combinedReceiptFilename()];
    // Retain the SAME token and record ID after a timeout: safe idempotent retry.
    // Changed data must get a NEW token; the previous uncertain save is never overwritten silently.
    if(pendingSaveSignature!==signature){pendingSaveToken='';pendingSaveSignature=signature;}
    if(!pendingSaveToken)pendingSaveToken='save_'+Date.now().toString(36)+'_'+Math.random().toString(36).slice(2);
-   const data=await cloudRequest('save',{payload:JSON.stringify({...r,photos,pdfData,pdfName,baseVersion:cloudVersion,saveToken:pendingSaveToken})});
+   const data=await cloudRequest('save',{payload:JSON.stringify({...r,photos,outputs,names,baseVersion:cloudVersion,saveToken:pendingSaveToken})});
    currentId=data.id;cloudVersion=data.baseVersion||data.updated||'';
    pendingSaveToken='';pendingSaveSignature='';folderUrl=data.folderUrl||'';
    // 서버 저장 완료를 즉시 표시. 브라우저의 보조 로컬 보관은 뒤에서 처리합니다.
