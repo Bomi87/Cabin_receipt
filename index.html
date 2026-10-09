@@ -90,7 +90,10 @@ header{padding:14px max(22px,calc((100vw - 1380px)/2));background:#142742;box-sh
 .tab-btn.active{background:#215fc5;border-color:#215fc5;color:white}
 .top-toolbar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px}
 .toolbar-right{display:flex;gap:10px;align-items:center}
-.toolbar-new{background:#fff;color:#173a64;border:1px solid #b6c8e0;min-width:100px}
+.toolbar-new{background:linear-gradient(135deg,#ff972f,#ef6c12)!important;color:#fff!important;border:1px solid #e86a11!important;border-radius:999px!important;min-width:116px;min-height:44px;padding:10px 20px!important;font-weight:900!important;letter-spacing:.6px;box-shadow:0 3px 9px rgba(211,92,13,.24)!important;display:inline-flex;gap:8px;align-items:center;justify-content:center;cursor:pointer}
+.toolbar-new:hover{background:linear-gradient(135deg,#f58624,#db5f0d)!important;box-shadow:0 5px 12px rgba(211,92,13,.3)!important}
+.toolbar-new:focus-visible{outline:3px solid #ffcf9c;outline-offset:3px}
+.toolbar-new:active{transform:translateY(1px)}
 .toolbar-save{background:#14804a!important;color:#fff!important;border-color:#14804a!important;min-width:128px}
 .preview{padding:20px}
 .preview-top{display:flex;justify-content:space-between;margin:0 0 12px}
@@ -167,7 +170,16 @@ header{padding:14px max(22px,calc((100vw - 1380px)/2));background:#142742;box-sh
 }
 /* Hide old management controls in favor of top toolbar and dedicated records tab. */
 .editor .saved,.editor .syncbox{display:none!important}
-.preview .preview-top button,.preview #printBtn,.preview #pngBtn{display:none!important}
+.preview #printBtn,.preview #pngBtn{display:none!important}
+.preview .preview-top #topSave{display:inline-flex!important;align-items:center;justify-content:center;visibility:visible!important;opacity:1!important}
+</style>
+<style id="save-next-to-preview-heading">
+/* Put the existing Google Drive save button immediately next to the preview title. */
+.preview .preview-top{display:flex!important;justify-content:flex-start!important;align-items:center!important;flex-wrap:nowrap!important;gap:16px!important}
+.preview .preview-top h2{flex:0 1 auto!important;width:auto!important;min-width:0!important;margin:0!important}
+.preview .preview-save{display:flex!important;flex:0 0 auto!important;align-items:center!important;gap:8px!important}
+.preview .preview-save #topSave{display:inline-flex!important;visibility:visible!important;opacity:1!important;position:static!important;width:auto!important;min-width:105px!important;height:44px!important;padding:10px 22px!important;background:#14804a!important;color:white!important;border:1px solid #14804a!important;border-radius:9px!important;font-weight:800!important;cursor:pointer!important}
+@media(max-width:600px){.preview .preview-top{gap:10px!important}.preview .preview-top h2{font-size:15px!important}.preview .preview-save #topSave{min-width:76px!important;padding:9px 13px!important}}
 </style>
 <style id="receipt-column-alignment-fix">
 /* Make all upper label/value boundaries exactly match the note rows. */
@@ -181,6 +193,8 @@ header{padding:14px max(22px,calc((100vw - 1380px)/2));background:#142742;box-sh
 </style>
 </head>
 <body>
+<div id="receiptAuthScreen" style="min-height:100vh;display:flex;align-items:center;justify-content:center;background:#f2f5fa;padding:20px;font-family:Arial,sans-serif"><div style="width:min(100%,420px);border:1px solid #dbe3ef;background:white;border-radius:18px;padding:26px;text-align:center;box-shadow:0 10px 30px #14233812"><h2 style="margin:0 0 12px">CABIN RECEIPT</h2><p id="receiptAuthStatus" style="color:#52647b;font-size:14px;line-height:1.6">Google 계정을 확인하는 중입니다.</p><div id="receiptGoogleButton" style="display:flex;justify-content:center;margin-top:16px"></div></div></div>
+<div id="receiptProtectedRoot" style="display:none">
 <header>
 <div class="brand">
 <span class="brand-icon">
@@ -198,7 +212,7 @@ header{padding:14px max(22px,calc((100vw - 1380px)/2));background:#142742;box-sh
 </header>
 <main class="shell"><nav aria-label="화면 전환" class="app-tabs"><button class="tab-btn active" id="tabCreate" type="button">영수증 작성</button><button class="tab-btn" id="tabRecords" type="button">저장된 영수증 목록</button></nav>
 
-<div class="top-toolbar"><button class="btn toolbar-new" id="topNew" type="button">NEW</button></div><div class="layout">
+<div class="top-toolbar"><button class="btn toolbar-new" id="topNew" type="button"><span aria-hidden="true">＋</span> NEW</button></div><div class="layout">
 <section class="panel editor">
 <div class="form-section">
 <div class="section-heading">
@@ -477,7 +491,49 @@ header{padding:14px max(22px,calc((100vw - 1380px)/2));background:#142742;box-sh
 </div>
 <div id="toast">
 </div>
+</div>
+<script src="https://accounts.google.com/gsi/client" async defer></script>
 <script>
+// Shared ApprovedUsers / Google Identity Services authorization.
+// The backend verifies the Google credential separately on every request.
+const RECEIPT_GOOGLE_CLIENT_ID='434108168386-jn8hp4mflhn68n98n6m9r1nm6iv7b3qe.apps.googleusercontent.com';
+let receiptIdToken='';
+let receiptCurrentUser=null;
+let receiptAuthenticated=false;
+let receiptAuthInProgress=false;
+function receiptShowAuthStatus(message){document.getElementById('receiptAuthStatus').textContent=message;}
+function receiptSignOut(){receiptIdToken='';receiptCurrentUser=null;receiptAuthenticated=false;document.getElementById('receiptProtectedRoot').style.display='none';document.getElementById('receiptAuthScreen').style.display='flex';receiptShowAuthStatus('Google 계정으로 다시 로그인해 주세요.');receiptRenderGoogleButton();}
+async function receiptHandleGoogleCredential(response){
+ if(receiptAuthInProgress)return;
+ receiptAuthInProgress=true;
+ receiptShowAuthStatus('승인된 계정인지 확인하고 있습니다...');
+ try{
+  if(!response||!response.credential)throw Error('Google 로그인 정보가 없습니다.');
+  receiptIdToken=response.credential;
+  // Use the same bridge as normal requests; server authorizes this token before replying.
+  const user=await cloudRequest('auth');
+  receiptCurrentUser=user;
+  receiptAuthenticated=true;
+  document.getElementById('receiptProtectedRoot').style.display='block';
+  document.getElementById('receiptAuthScreen').style.display='none';
+  // Load staff only after successful authorization.
+  if(typeof connectAndLoadStaff==='function')await connectAndLoadStaff();
+ }catch(err){receiptAuthenticated=false;receiptIdToken='';receiptShowAuthStatus('접근 실패: '+err.message);receiptRenderGoogleButton();}
+ finally{receiptAuthInProgress=false;}
+}
+function receiptRenderGoogleButton(){
+ const el=document.getElementById('receiptGoogleButton');
+ if(!window.google?.accounts?.id){setTimeout(receiptRenderGoogleButton,350);return;}
+ el.replaceChildren();
+ google.accounts.id.renderButton(el,{theme:'outline',size:'large',width:270,text:'continue_with',shape:'pill'});
+}
+function receiptStartAuth(){
+ if(!window.google?.accounts?.id){setTimeout(receiptStartAuth,300);return;}
+ google.accounts.id.initialize({client_id:RECEIPT_GOOGLE_CLIENT_ID,callback:receiptHandleGoogleCredential,auto_select:true,cancel_on_tap_outside:false});
+ receiptRenderGoogleButton();
+ google.accounts.id.prompt();
+}
+window.addEventListener('load',receiptStartAuth);
    'use strict';
 let EMPLOYEES=[]; // Google Sheets '구성원정보'에서만 불러옵니다.
 const fields=['approval','amount','category','aircraft','tripDate','details'];const $=id=>document.getElementById(id);const KEY='receiptTemplateSavedV1';let photo='',photos=[],selectedPhoto=0,folderUrl='',currentId='',stream=null,dbPromise=null;let cloudBusy=false,cloudVersion='',pendingSaveToken='';const CLOUD_URL_KEY='receiptFlowCloudUrlV1';
@@ -608,7 +664,7 @@ function cloudRequest(action,body={}){
  return new Promise((resolve,reject)=>{
   const iframe=document.createElement('iframe');iframe.name='bridge_'+requestId;iframe.hidden=true;
   const form=document.createElement('form');form.method='POST';form.action=url;form.target=iframe.name;form.hidden=true;
-  const params={action,requestId,...body};for(const [k,v] of Object.entries(params)){const i=document.createElement('input');i.type='hidden';i.name=k;i.value=String(v??'');form.append(i)}
+  const params={action,requestId,idToken:receiptIdToken,...body};for(const [k,v] of Object.entries(params)){const i=document.createElement('input');i.type='hidden';i.name=k;i.value=String(v??'');form.append(i)}
   let done=false;const finish=()=>{if(done)return;done=true;clearTimeout(timer);window.removeEventListener('message',onMessage);form.remove();iframe.remove()};
   const timer=setTimeout(()=>{finish();reject(Error('Apps Script 응답을 받지 못했습니다(30초). /exec 주소를 시크릿 창에서 직접 열었을 때 Google 로그인이 나타나면 배포 권한 문제입니다. [배포 관리 → 새 버전, 실행 사용자: 나, 액세스: 모든 사용자]로 수정하세요.'))},30000);
   function onMessage(e){const m=e.data;if(!m||m.app!=='receipt-template-bridge-v1'||m.requestId!==requestId)return;
@@ -616,7 +672,7 @@ function cloudRequest(action,body={}){
    // HTMLService can nest its postMessage sender in an internal iframe; e.source may differ.
    // Trust only Google script origins, the unpredictable requestId, and the app marker.
    if(!/^https:\/\/([a-z0-9-]+\.)*googleusercontent\.com$/i.test(e.origin)&&e.origin!=='https://script.google.com')return;
-   finish();if(m.ok)resolve(m.data);else reject(Error(m.error||'요청 실패'))}
+   finish();if(m.ok)resolve(m.data);else {if(/Google 로그인|승인되지 않은|사용 권한/.test(String(m.error||'')))setTimeout(receiptSignOut,0);reject(Error(m.error||'요청 실패'))}}
   window.addEventListener('message',onMessage);document.body.append(iframe,form);form.submit();
  });
 }
@@ -630,8 +686,8 @@ function paintCloudList(selected=''){
  $('cloudList').innerHTML='<option value="">클라우드 저장본 선택</option>'+rows.map(r=>`<option value="${esc(r.id)}">${esc(r.approval||'-')}</option>`).join('');$('cloudList').value=selected;
  const checked=new Set([...document.querySelectorAll('.cloud-check:checked')].map(x=>x.value));
  $('recordsSummary').textContent=`총 ${rows.length}건 · 최근 저장한 영수증이 맨 위에 표시됩니다. (KST)`;
- const header='<div class="record-head"><span>선택</span><span>업로드 (KST)</span><span>승인번호</span><span>이름</span><span>금액</span><span>구분</span><span>기종</span><span>트립시작일</span><span>세부내역</span><span>사진</span><span>파일</span></div>';
- $('cloudRecordsGrid').innerHTML=header+(rows.length?rows.map(r=>`<label class="record-row"><input class="cloud-check" type="checkbox" value="${esc(r.id)}" ${checked.has(r.id)?'checked':''}/><span class="record-cells"><span class="record-cell">${esc(kstTime(r.updated))}</span><span class="record-cell"><b>${esc(r.approval||'-')}</b></span><span class="record-cell">${esc(r.name||'-')}</span><span class="record-cell">${esc(Number(r.amount||0).toLocaleString('ko-KR'))}원</span><span class="record-cell">${esc(r.category||'-')}</span><span class="record-cell">${esc(r.aircraft||'-')}</span><span class="record-cell">${esc(r.tripDate||'-')}</span><span class="record-cell">${esc(r.details||'-')}</span><span class="record-cell">${Number(r.photoCount||1)}장</span><span class="record-cell folder">${r.folderUrl?'<a href="'+esc(r.folderUrl)+'" target="_blank" rel="noopener" onclick="event.stopPropagation()">Drive ↗</a>':'-'}</span></span></label>`).join(''):'<div class="empty-records">저장된 영수증이 없습니다.</div>');
+ const header='<div class="record-head"><span>선택</span><span>업로드 (KST)</span><span>승인번호</span><span>이름</span><span>금액</span><span>구분</span><span>기종</span><span>트립시작일</span><span>세부내역</span><span>사진</span><span>파일</span><span>제출자</span></div>';
+ $('cloudRecordsGrid').innerHTML=header+(rows.length?rows.map(r=>`<label class="record-row"><input class="cloud-check" type="checkbox" value="${esc(r.id)}" ${checked.has(r.id)?'checked':''}/><span class="record-cells"><span class="record-cell">${esc(kstTime(r.updated))}</span><span class="record-cell"><b>${esc(r.approval||'-')}</b></span><span class="record-cell">${esc(r.name||'-')}</span><span class="record-cell">${esc(Number(r.amount||0).toLocaleString('ko-KR'))}원</span><span class="record-cell">${esc(r.category||'-')}</span><span class="record-cell">${esc(r.aircraft||'-')}</span><span class="record-cell">${esc(r.tripDate||'-')}</span><span class="record-cell">${esc(r.details||'-')}</span><span class="record-cell">${Number(r.photoCount||1)}장</span><span class="record-cell folder">${r.folderUrl?'<a href="'+esc(r.folderUrl)+'" target="_blank" rel="noopener" onclick="event.stopPropagation()">Drive ↗</a>':'-'}</span><span class="record-cell">${esc(r.submitter||'-')}</span></span></label>`).join(''):'<div class="empty-records">저장된 영수증이 없습니다.</div>');
 }
 
 async function updateCloudList(){
@@ -669,12 +725,12 @@ $('downloadSelectedZip').addEventListener('click',()=>runCloud('ZIP 생성',asyn
  const a=document.createElement('a');a.href=data.url;a.target='_blank';a.rel='noopener';a.textContent='ZIP 다운로드: '+data.name+' ('+data.count+'건 / '+data.files+'개 PNG)';
  $('zipResult').replaceChildren(a);cloudStatus('ZIP 준비 완료 · 아래 링크를 눌러 다운로드하세요.');
 }));
-$('cloudSave').addEventListener('click',()=>runCloud('클라우드 저장',async()=>{const r=record();if(!currentId)currentId=r.id;if(!r.name)throw Error('이름을 선택하세요.');if(!photos.length)throw Error('영수증 사진을 첨부하세요.');if(!/^\d{8}$/.test(String(r.approval||'').trim()))throw Error('승인번호는 정확히 8자리 숫자로 입력해야 합니다.');const outputs=await Promise.all(photos.map(createReceiptPng));const names=photos.map((_,i)=>finalImageFilename(i,photos.length));if(!pendingSaveToken)pendingSaveToken='save_'+Date.now().toString(36)+'_'+Math.random().toString(36).slice(2);const data=await cloudRequest('save',{payload:JSON.stringify({...r,photos,outputs,names,baseVersion:cloudVersion,saveToken:pendingSaveToken})});currentId=data.id;cloudVersion=data.baseVersion||data.updated||'';pendingSaveToken='';folderUrl=data.folderUrl||'';await saveRecord();if(cloudListLoaded){cachedCloudRecords=cachedCloudRecords.filter(x=>x.id!==data.id);cachedCloudRecords.push({id:data.id,name:r.name,approval:r.approval,name:r.name,amount:r.amount,category:r.category,aircraft:r.aircraft,tripDate:r.tripDate,details:r.details,photoCount:data.photoCount,folderUrl:data.folderUrl,updated:data.updated||new Date().toISOString()});paintCloudList(data.id)}cloudStatus('클라우드 저장 완료 · '+data.photoCount+'장 · 서버 호출 1회 · 폴더 링크가 위에 표시됩니다.')}));
+$('cloudSave').addEventListener('click',()=>runCloud('클라우드 저장',async()=>{const r=record();if(!currentId)currentId=r.id;if(!r.name)throw Error('이름을 선택하세요.');if(!photos.length)throw Error('영수증 사진을 첨부하세요.');if(!/^\d{8}$/.test(String(r.approval||'').trim()))throw Error('승인번호는 정확히 8자리 숫자로 입력해야 합니다.');const outputs=await Promise.all(photos.map(createReceiptPng));const names=photos.map((_,i)=>finalImageFilename(i,photos.length));if(!pendingSaveToken)pendingSaveToken='save_'+Date.now().toString(36)+'_'+Math.random().toString(36).slice(2);const data=await cloudRequest('save',{payload:JSON.stringify({...r,photos,outputs,names,baseVersion:cloudVersion,saveToken:pendingSaveToken})});currentId=data.id;cloudVersion=data.baseVersion||data.updated||'';pendingSaveToken='';folderUrl=data.folderUrl||'';await saveRecord();if(cloudListLoaded){cachedCloudRecords=cachedCloudRecords.filter(x=>x.id!==data.id);cachedCloudRecords.push({id:data.id,name:r.name,approval:r.approval,name:r.name,amount:r.amount,category:r.category,aircraft:r.aircraft,tripDate:r.tripDate,details:r.details,photoCount:data.photoCount,folderUrl:data.folderUrl,submitter:receiptCurrentUser?.name||receiptCurrentUser?.email||'',updated:data.updated||new Date().toISOString()});paintCloudList(data.id)}cloudStatus('클라우드 저장 완료 · '+data.photoCount+'장 · 서버 호출 1회 · 폴더 링크가 위에 표시됩니다.')}));
 $('cloudLoad').addEventListener('click',()=>runCloud('클라우드 불러오기',async()=>{const id=$('cloudList').value;if(!id)throw Error('클라우드 저장본을 먼저 선택하세요.');const d=await cloudRequest('load',{id});const r=d.record;currentId=r.id;cloudVersion=r.version||r.updated||'';pendingSaveToken='';fillNames(r.name||'');for(const k of fields)$(k).value=r[k]||'';photos=d.photos|| (d.photo?[d.photo]:[]);selectedPhoto=0;folderUrl=d.folderUrl||r.folderUrl||'';syncPhotos();cloudStatus('클라우드 양식을 불러왔습니다. 필요한 경우 양식 저장을 눌러 기기에도 보관하세요.')}));
 $('cloudDelete').addEventListener('click',()=>runCloud('클라우드 삭제',async()=>{const id=$('cloudList').value;if(!id)throw Error('삭제할 저장본을 선택하세요.');if(!confirm('클라우드 저장본을 영구 삭제하시겠습니까?'))return;await cloudRequest('delete',{id});if(cloudListLoaded){cachedCloudRecords=cachedCloudRecords.filter(x=>x.id!==id);paintCloudList()}cloudStatus('클라우드 저장본 삭제 완료 (서버 호출 1회)')}));
 $('backendUrl').value='https://script.google.com/macros/s/AKfycbxrPy3v5wpemZXx-kyqlA6Dr3L0hybiyTHKFqtRxs3fizPS_Uor1Cno6fiegrQ2OOYHXA/exec';
 $('name').addEventListener('change',()=>{syncSelectedStaff();render()});for(const k of fields)$(k).addEventListener('input',render);
-$('uploadArea').addEventListener('click',()=>{if(!$('albumFile').disabled)$('albumFile').click()});$('uploadArea').addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();$('albumFile').click()}});$('cameraBtn').addEventListener('click',startCamera);$('albumBtn').addEventListener('click',()=>$('albumFile').click());$('cameraFile').addEventListener('change',e=>{readPhotos([...e.target.files]);e.target.value=''});$('albumFile').addEventListener('change',e=>{readPhotos([...e.target.files]);e.target.value=''});$('removePhoto').addEventListener('click',()=>{if(!photos.length)return;photos.splice(selectedPhoto,1);selectedPhoto=Math.max(0,Math.min(selectedPhoto,photos.length-1));syncPhotos()});$('closeCamera').addEventListener('click',stopCamera);$('takePhoto').addEventListener('click',takePhoto);$('saveBtn').addEventListener('click',saveRecord);$('newBtn').addEventListener('click',clearForm);$('savedList').addEventListener('change',e=>loadRecord(e.target.value));$('deleteBtn').addEventListener('click',deleteRecord);$('printBtn').addEventListener('click',()=>window.print());$('pngBtn').addEventListener('click',()=>downloadReceiptPng().catch(e=>notice(e.message)));window.addEventListener('beforeunload',stopCamera);staffInit();refreshSaved();render();connectAndLoadStaff();
+$('uploadArea').addEventListener('click',()=>{if(!$('albumFile').disabled)$('albumFile').click()});$('uploadArea').addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();$('albumFile').click()}});$('cameraBtn').addEventListener('click',startCamera);$('albumBtn').addEventListener('click',()=>$('albumFile').click());$('cameraFile').addEventListener('change',e=>{readPhotos([...e.target.files]);e.target.value=''});$('albumFile').addEventListener('change',e=>{readPhotos([...e.target.files]);e.target.value=''});$('removePhoto').addEventListener('click',()=>{if(!photos.length)return;photos.splice(selectedPhoto,1);selectedPhoto=Math.max(0,Math.min(selectedPhoto,photos.length-1));syncPhotos()});$('closeCamera').addEventListener('click',stopCamera);$('takePhoto').addEventListener('click',takePhoto);$('saveBtn').addEventListener('click',saveRecord);$('newBtn').addEventListener('click',clearForm);$('savedList').addEventListener('change',e=>loadRecord(e.target.value));$('deleteBtn').addEventListener('click',deleteRecord);$('printBtn').addEventListener('click',()=>window.print());$('pngBtn').addEventListener('click',()=>downloadReceiptPng().catch(e=>notice(e.message)));window.addEventListener('beforeunload',stopCamera);staffInit();refreshSaved();render();
   
 // Compact UI navigation: one create screen, one cloud list.
 function showCabinPage(page){
