@@ -77,6 +77,12 @@ header{padding:14px max(22px,calc((100vw - 1380px)/2));background:#142742;box-sh
 .preview-save{display:flex;align-items:center;gap:8px;flex:0 0 auto}
 .preview-save .toolbar-save{display:inline-flex;align-items:center;justify-content:center;min-width:96px}
 @media(max-width:600px){.preview .preview-top{display:flex;grid-template-columns:none;flex-wrap:nowrap}.preview .preview-top h2{grid-column:auto;font-size:15px}.preview-save .toolbar-save{min-width:76px}}
+
+/* 저장 목록: 정렬 옵션 (버튼마다 오름차순/내림차순 토글) */
+.records-sort-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:8px 0 12px}
+.records-sort-actions .sort-caption{font-size:12px;font-weight:700;color:#52647d;margin-right:3px}
+.records-sort-actions .btn{font-size:12px;padding:9px 12px;white-space:nowrap}
+.records-sort-actions .btn.active-sort{background:#235bc3;color:white;border-color:#235bc3}
 </style>
 <style>
 /* 2026-10-09 compact one-column receipt editor + separate newest-first list */
@@ -441,7 +447,7 @@ header{padding:14px max(22px,calc((100vw - 1380px)/2));background:#142742;box-sh
 <p class="hint">영수증 사진과 입력 정보가 결합된 완성 양식입니다. 이미지를 확인한 뒤 상단 저장 버튼을 누르세요.</p>
 </section>
 </div>
-<section class="panel list-page" hidden="" id="recordsPage"><div class="list-head"><div><h2>저장된 영수증 목록</h2><p class="small">최신 업로드 순 · 체크한 영수증을 ZIP으로 다운로드</p></div><button class="btn" id="jumpRefresh" type="button">↻ 목록 새로고침</button></div><div class="records-summary" id="recordsSummary">목록 조회 대기 중</div><div class="record-actions"><button class="btn" id="cloudRefresh" type="button">목록 새로고침</button><button class="btn" id="selectAllCloud" type="button">전체 선택</button><button class="btn" id="clearCloudChecks" type="button">선택 해제</button><button class="btn green" id="downloadSelectedZip" type="button">선택 ZIP 다운로드</button></div><div aria-live="polite" id="zipResult"></div><div class="records-table-wrap"><div class="record-grid" id="cloudRecordsGrid"><p class="hint">목록 새로고침 버튼을 누르면 저장본이 나타납니다.</p></div></div></section><div aria-hidden="true" class="form-section storage-section" style="display:none !important">
+<section class="panel list-page" hidden="" id="recordsPage"><div class="list-head"><div><h2>저장된 영수증 목록</h2><p class="small">최신 업로드 순 · 체크한 영수증을 ZIP으로 다운로드</p></div><button class="btn" id="jumpRefresh" type="button">↻ 목록 새로고침</button></div><div class="records-summary" id="recordsSummary">목록 조회 대기 중</div><div class="record-actions"><button class="btn" id="cloudRefresh" type="button">목록 새로고침</button><button class="btn" id="selectAllCloud" type="button">전체 선택</button><button class="btn" id="clearCloudChecks" type="button">선택 해제</button><button class="btn green" id="downloadSelectedZip" type="button">선택 ZIP 다운로드</button></div><div class="records-sort-actions" aria-label="영수증 목록 정렬"><span class="sort-caption">정렬</span><button class="btn active-sort" type="button" data-record-sort="updated">최신순</button><button class="btn" type="button" data-record-sort="name">이름순 ↑</button><button class="btn" type="button" data-record-sort="submitter">제출자순 ↑</button><button class="btn" type="button" data-record-sort="aircraft">기종순 ↑</button></div><div aria-live="polite" id="zipResult"></div><div class="records-table-wrap"><div class="record-grid" id="cloudRecordsGrid"><p class="hint">목록 새로고침 버튼을 누르면 저장본이 나타납니다.</p></div></div></section><div aria-hidden="true" class="form-section storage-section" style="display:none !important">
 <div class="section-heading">
 <span class="step">
         04
@@ -680,12 +686,47 @@ async function runCloud(label,fn){if(cloudBusy)return;cloudBusy=true;cloudStatus
 // 목록은 사용자가 요청할 때만 조회합니다. 저장/삭제 후에는 화면 목록만 갱신합니다.
 let cachedCloudRecords=[];
 let cloudListLoaded=false;
+let receiptSortKey='updated';
+let receiptSortAscending=false;
+const receiptSorter=new Intl.Collator('ko-KR',{numeric:true,sensitivity:'base'});
+function applyReceiptSort(rows){
+ return rows.sort((a,b)=>{
+  if(receiptSortKey==='updated'){
+   const n=String(a.updated||'').localeCompare(String(b.updated||''));
+   return receiptSortAscending?n:-n;
+  }
+  const left=String(a[receiptSortKey]||'').trim();
+  const right=String(b[receiptSortKey]||'').trim();
+  // 비어 있는 제출자(과거 기록)는 정렬 방향과 관계없이 아래에 둡니다.
+  if(!left&&right)return 1;
+  if(left&&!right)return -1;
+  const n=receiptSorter.compare(left,right);
+  return n===0?String(b.updated||'').localeCompare(String(a.updated||'')):(receiptSortAscending?n:-n);
+ });
+}
+function renderReceiptSortButtons(){
+ document.querySelectorAll('[data-record-sort]').forEach(btn=>{
+  const active=btn.dataset.recordSort===receiptSortKey;
+  btn.classList.toggle('active-sort',active);
+  btn.setAttribute('aria-pressed',String(active));
+  const title={updated:'최신순',name:'이름순',submitter:'제출자순',aircraft:'기종순'}[btn.dataset.recordSort];
+  btn.textContent=title+(active?(receiptSortAscending?' ↑':' ↓'):(btn.dataset.recordSort==='updated'?'':' ↑'));
+ });
+}
+document.querySelectorAll('[data-record-sort]').forEach(btn=>btn.addEventListener('click',()=>{
+ const key=btn.dataset.recordSort;
+ receiptSortAscending=receiptSortKey===key?!receiptSortAscending:(key!=='updated');
+ receiptSortKey=key;
+ renderReceiptSortButtons();
+ paintCloudList();
+}));
+renderReceiptSortButtons();
 function kstTime(iso){if(!iso)return '-';const d=new Date(iso);return isNaN(d.getTime())?iso:new Intl.DateTimeFormat('ko-KR',{timeZone:'Asia/Seoul',year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hour12:false}).format(d)}
 function paintCloudList(selected=''){
- const rows=[...cachedCloudRecords].sort((a,b)=>String(b.updated||'').localeCompare(String(a.updated||'')));
+ const rows=applyReceiptSort([...cachedCloudRecords]);
  $('cloudList').innerHTML='<option value="">클라우드 저장본 선택</option>'+rows.map(r=>`<option value="${esc(r.id)}">${esc(r.approval||'-')}</option>`).join('');$('cloudList').value=selected;
  const checked=new Set([...document.querySelectorAll('.cloud-check:checked')].map(x=>x.value));
- $('recordsSummary').textContent=`총 ${rows.length}건 · 최근 저장한 영수증이 맨 위에 표시됩니다. (KST)`;
+ $('recordsSummary').textContent=`총 ${rows.length}건 · ${ {updated:'업로드일',name:'이름',submitter:'제출자',aircraft:'기종'}[receiptSortKey] } ${receiptSortAscending?'오름차순':'내림차순'} 정렬 (KST)`;
  const header='<div class="record-head"><span>선택</span><span>업로드 (KST)</span><span>승인번호</span><span>이름</span><span>금액</span><span>구분</span><span>기종</span><span>트립시작일</span><span>세부내역</span><span>사진</span><span>파일</span><span>제출자</span></div>';
  $('cloudRecordsGrid').innerHTML=header+(rows.length?rows.map(r=>`<label class="record-row"><input class="cloud-check" type="checkbox" value="${esc(r.id)}" ${checked.has(r.id)?'checked':''}/><span class="record-cells"><span class="record-cell">${esc(kstTime(r.updated))}</span><span class="record-cell"><b>${esc(r.approval||'-')}</b></span><span class="record-cell">${esc(r.name||'-')}</span><span class="record-cell">${esc(Number(r.amount||0).toLocaleString('ko-KR'))}원</span><span class="record-cell">${esc(r.category||'-')}</span><span class="record-cell">${esc(r.aircraft||'-')}</span><span class="record-cell">${esc(r.tripDate||'-')}</span><span class="record-cell">${esc(r.details||'-')}</span><span class="record-cell">${Number(r.photoCount||1)}장</span><span class="record-cell folder">${r.folderUrl?'<a href="'+esc(r.folderUrl)+'" target="_blank" rel="noopener" onclick="event.stopPropagation()">Drive ↗</a>':'-'}</span><span class="record-cell">${esc(r.submitter||'-')}</span></span></label>`).join(''):'<div class="empty-records">저장된 영수증이 없습니다.</div>');
 }
