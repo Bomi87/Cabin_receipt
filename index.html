@@ -120,7 +120,7 @@ header{padding:14px max(22px,calc((100vw - 1380px)/2));background:#142742;box-sh
         </label>
        </div>
        <p class="hint" id="staffStatus">
-        CABIN_RECEIPT 구성원정보를 불러오려면 아래 버튼을 누르세요. 최초 1회 접근 암호가 필요합니다.
+        CABIN_RECEIPT 구성원정보를 불러오려면 아래 버튼을 누르세요. 최초 연결 시 접근 암호 입력창이 표시됩니다. 연결 성공 후 선택할 수 있습니다.
        </p>
        <button class="btn primary" id="staffQuickLoad" type="button" style="margin-top:12px;min-height:46px;width:100%;font-weight:700">구성원 불러오기</button>
       </div>
@@ -475,12 +475,12 @@ function cloudRequest(action,body={}){
   const timer=setTimeout(()=>{finish();reject(Error('30초 동안 Apps Script 응답이 없습니다. 배포 관리에서 실행 사용자=나, 액세스=모든 사용자, 새 버전 배포를 확인하세요. Google 로그인 화면이 나타나면 공개 접근 설정을 확인해야 합니다.'))},30000);
   function onMessage(e){const m=e.data;if(!m||m.app!=='receipt-template-bridge-v1'||m.requestId!==requestId)return;
    // Apps Script HTMLService responses come from googleusercontent.com, not script.google.com.
-   if(!/^https:\/\/([a-z0-9-]+\.)*googleusercontent\.com$/i.test(e.origin)&&e.origin!=='https://script.google.com')return;
+   if(e.source!==iframe.contentWindow)return; if(!/^https:\/\/([a-z0-9-]+\.)*googleusercontent\.com$/i.test(e.origin)&&e.origin!=='https://script.google.com')return;
    finish();if(m.ok)resolve(m.data);else reject(Error(m.error||'요청 실패'))}
   window.addEventListener('message',onMessage);document.body.append(iframe,form);form.submit();
  });
 }
-async function runCloud(label,fn){if(cloudBusy)return;cloudBusy=true;cloudStatus(label+'...');try{await fn()}catch(e){cloudStatus('오류: '+e.message);notice(e.message)}finally{cloudBusy=false}}
+async function runCloud(label,fn){if(cloudBusy)return;cloudBusy=true;cloudStatus(label+'...');try{await fn()}catch(e){cloudStatus('오류: '+e.message);$('staffStatus').textContent='구성원 연결 실패: '+e.message;notice(e.message)}finally{cloudBusy=false}}
 // 목록은 사용자가 요청할 때만 조회합니다. 저장/삭제 후에는 화면 목록만 갱신합니다.
 let cachedCloudRecords=[];
 let cloudListLoaded=false;
@@ -504,7 +504,7 @@ function applyStaffData(data){
 }
 async function connectAndLoadStaff(){
  const key=$('cloudKey').value.trim();
- if(!key){document.getElementById('cloudKey').scrollIntoView({behavior:'smooth',block:'center'});$('cloudKey').focus();cloudStatus('접근 암호를 입력한 뒤 연결 확인을 눌러주세요.');notice('클라우드 접근 암호를 먼저 입력하세요.');return;}
+ if(!key){const entered=window.prompt('구성원정보 조회를 위한 Apps Script 접근 암호를 입력하세요.\n(백엔드 SETUP_ACCESS_PASSWORD에 설정한 값)');if(entered===null)return;if(!entered.trim()){cloudStatus('오류: 접근 암호가 입력되지 않았습니다.');return;}$('cloudKey').value=entered.trim();}
  await runCloud('구성원정보 불러오는 중',async()=>{
   const data=await cloudRequest('ping');applyStaffData(data);
   try{localStorage.setItem(CLOUD_URL_KEY,backendAddress())}catch(e){}
