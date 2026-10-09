@@ -247,6 +247,42 @@ input:not([type=hidden]):not([type=file]),select,textarea,
   }
 }
 </style>
+<style id="ios-tripdate-vertical-centering-fix">
+/* iOS Safari can align the editable date segments to the top when line-height:normal and appearance:none override its native date field. */
+#tripDate {
+  height: 45px !important;
+  min-height: 45px !important;
+  box-sizing: border-box !important;
+  padding: 0 12px !important;
+  line-height: 45px !important;
+  vertical-align: middle !important;
+  color: #1b2b43;
+}
+#tripDate::-webkit-date-and-time-value {
+  min-height: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  text-align: left;
+  line-height: normal;
+}
+#tripDate::-webkit-datetime-edit {
+  display: inline-flex;
+  align-items: center;
+  min-height: 100%;
+  padding: 0;
+  line-height: normal;
+}
+#tripDate::-webkit-datetime-edit-fields-wrapper {
+  display: inline-flex;
+  align-items: center;
+  padding: 0;
+}
+#tripDate::-webkit-calendar-picker-indicator {
+  align-self: center;
+  margin: 0 0 0 auto;
+}
+</style>
 </head>
 <body>
 <div id="receiptAuthScreen" style="min-height:100vh;display:flex;align-items:center;justify-content:center;background:#f2f5fa;padding:20px;font-family:Arial,sans-serif"><div style="width:min(100%,420px);border:1px solid #dbe3ef;background:white;border-radius:18px;padding:26px;text-align:center;box-shadow:0 10px 30px #14233812"><h2 style="margin:0 0 12px">CABIN RECEIPT</h2><p id="receiptAuthStatus" style="color:#52647b;font-size:14px;line-height:1.6">Google 계정을 확인하는 중입니다.</p><div id="receiptGoogleButton" style="display:flex;justify-content:center;margin-top:16px"></div></div></div>
@@ -742,10 +778,15 @@ async function drawAdditionalPhoto(src, ctx, offsetY){
 async function createCombinedReceiptPng(){
  if(!photos.length || photos.length>8)throw Error('사진은 1~8장을 첨부해야 합니다.');
  const canvas=document.createElement('canvas');
- canvas.width=1600;canvas.height=940*photos.length;
- const ctx=canvas.getContext('2d',{alpha:false});
+ // 1600px 원본 레이아웃 좌표를 유지하되 출력 픽셀은 75%로 축소합니다.
+ // 8장 기준 1600x7520 -> 1200x5640 (약 44% 적은 픽셀).
+ const outputScale=.75;
+ canvas.width=Math.round(1600*outputScale);
+ canvas.height=Math.round(940*photos.length*outputScale);
+ const ctx=canvas.getContext('2d',{alpha:false,willReadFrequently:false});
  if(!ctx)throw Error('이미지 캔버스를 생성하지 못했습니다.');
- ctx.fillStyle='#ffffff';ctx.fillRect(0,0,canvas.width,canvas.height);
+ ctx.scale(outputScale,outputScale);
+ ctx.fillStyle='#ffffff';ctx.fillRect(0,0,1600,940*photos.length);
  // 중간 PNG 인코딩/디코딩 없이 최종 캔버스에 직접 그립니다.
  // 첫 사진에만 오른쪽 정보 테이블을 넣습니다.
  await createReceiptPng(photos[0],ctx,0);
@@ -757,12 +798,12 @@ async function createCombinedReceiptPng(){
  catch(e){throw Error('PNG 생성에 실패했습니다. 사진의 크기를 줄여 다시 시도하세요.');}
 }
 function combinedReceiptFilename(){return fileBaseName()+'.png'}
-function resizePhoto(file){return new Promise((resolve,reject)=>{if(!file.type.startsWith('image/'))return reject(Error('이미지 파일만 선택할 수 있습니다.'));const img=new Image(),url=URL.createObjectURL(file);img.onload=()=>{const s=Math.min(1,1400/Math.max(img.naturalWidth,img.naturalHeight)),c=document.createElement('canvas');c.width=Math.round(img.naturalWidth*s);c.height=Math.round(img.naturalHeight*s);c.getContext('2d').drawImage(img,0,0,c.width,c.height);URL.revokeObjectURL(url);resolve(c.toDataURL('image/jpeg',.7))};img.onerror=()=>{URL.revokeObjectURL(url);reject(Error('사진을 읽지 못했습니다.'))};img.src=url})}
+function resizePhoto(file){return new Promise((resolve,reject)=>{if(!file.type.startsWith('image/'))return reject(Error('이미지 파일만 선택할 수 있습니다.'));const img=new Image(),url=URL.createObjectURL(file);img.onload=()=>{try{const s=Math.min(1,1200/Math.max(img.naturalWidth,img.naturalHeight)),c=document.createElement('canvas');c.width=Math.max(1,Math.round(img.naturalWidth*s));c.height=Math.max(1,Math.round(img.naturalHeight*s));c.getContext('2d',{alpha:false}).drawImage(img,0,0,c.width,c.height);URL.revokeObjectURL(url);resolve(c.toDataURL('image/jpeg',.66))}catch(e){URL.revokeObjectURL(url);reject(e)}};img.onerror=()=>{URL.revokeObjectURL(url);reject(Error('사진을 읽지 못했습니다.'))};img.src=url})}
 async function readPhotos(files){try{for(const f of files){if(photos.length>=8)throw Error('한 건당 사진은 최대 8장입니다.');photos.push(await resizePhoto(f));}selectedPhoto=Math.max(0,photos.length-1);syncPhotos();notice('첨부 '+photos.length+'장')}catch(e){notice(e.message)}}
 function readPhoto(file){return readPhotos(file?[file]:[])}
 async function startCamera(){try{if(!navigator.mediaDevices?.getUserMedia)throw Error('브라우저 카메라를 사용할 수 없습니다.');stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'},width:{ideal:1920}},audio:false});$('video').srcObject=stream;$('cameraOverlay').classList.add('open')}catch(e){stopCamera();$('cameraFile').click();notice('기본 카메라 앱으로 전환합니다.')}}
 function stopCamera(){if(stream){stream.getTracks().forEach(t=>t.stop());stream=null}$('video').srcObject=null;$('cameraOverlay').classList.remove('open')}
-function takePhoto(){const v=$('video');if(!v.videoWidth){notice('카메라 준비 중입니다.');return}if(photos.length>=8){stopCamera();notice('최대 8장입니다.');return}const can=document.createElement('canvas'),s=Math.min(1,1400/Math.max(v.videoWidth,v.videoHeight));can.width=Math.round(v.videoWidth*s);can.height=Math.round(v.videoHeight*s);can.getContext('2d').drawImage(v,0,0,can.width,can.height);photos.push(can.toDataURL('image/jpeg',.7));selectedPhoto=photos.length-1;stopCamera();syncPhotos()}
+function takePhoto(){const v=$('video');if(!v.videoWidth){notice('카메라 준비 중입니다.');return}if(photos.length>=8){stopCamera();notice('최대 8장입니다.');return}const can=document.createElement('canvas'),s=Math.min(1,1200/Math.max(v.videoWidth,v.videoHeight));can.width=Math.round(v.videoWidth*s);can.height=Math.round(v.videoHeight*s);can.getContext('2d').drawImage(v,0,0,can.width,can.height);photos.push(can.toDataURL('image/jpeg',.66));selectedPhoto=photos.length-1;stopCamera();syncPhotos()}
 function saved(){try{return JSON.parse(localStorage.getItem(KEY)||'[]')}catch{return []}}function setSaved(x){localStorage.setItem(KEY,JSON.stringify(x))}
 function record(){return{id:currentId||('r'+Date.now().toString(36)+Math.random().toString(36).slice(2)),dept:$('dept').value,name:selectedName(),...Object.fromEntries(fields.map(id=>[id,$(id).value])),folderUrl,baseVersion:cloudVersion,updated:new Date().toISOString()}}
 function refreshSaved(){const rows=saved().sort((a,b)=>b.updated.localeCompare(a.updated));$('savedList').innerHTML='<option value="">새 양식 / 저장본 선택</option>'+rows.map(r=>`<option value="${esc(r.id)}">${esc(r.name||'미지정')} · ${esc(r.approval||'승인번호 없음')} · ${esc((r.updated||'').slice(0,10))}</option>`).join('');$('savedList').value=currentId}
