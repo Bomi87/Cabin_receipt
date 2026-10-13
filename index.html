@@ -735,7 +735,14 @@ function fileBaseName(){
  return safeFilename(approval+'(승인번호)_'+amount+'원_'+md+'_'+(selectedName()||'이름없음'));
 }
 function finalImageFilename(i,total){return fileBaseName()+(total>1?'_'+String(i+1).padStart(2,'0'):'')+'.png'}
-let receiptImageDecodeCache=null;
+// Keep up to eight decoded upload photos warm between selection and saving.
+// Avoid repeated JPEG decode when the user taps Save.
+let receiptImageDecodeCache=new Map();
+function receiptWarmPhotos(items){
+ const active=new Set(items);
+ for(const key of receiptImageDecodeCache.keys())if(!active.has(key))receiptImageDecodeCache.delete(key);
+ for(const item of items)decodeImage(item).catch(()=>receiptImageDecodeCache.delete(item));
+}
 function decodeImage(src){
  if(receiptImageDecodeCache&&receiptImageDecodeCache.has(src))return receiptImageDecodeCache.get(src);
  const task=new Promise((resolve,reject)=>{const im=new Image();im.onload=()=>resolve(im);im.onerror=()=>reject(Error('이미지를 처리할 수 없습니다.'));im.src=src});
@@ -848,9 +855,9 @@ async function createCombinedReceiptPng(photoData=photos){
  const available=RECEIPT_MAX_TOTAL_BASE64-photoData.reduce((n,p)=>n+receiptDataSize(p),0);
  if(available<250000)throw Error('사진 용량이 너무 큽니다. 사진 해상도를 줄인 후 다시 시도하세요.');
  const fullHeight=1700+940*(photoData.length-1);
- receiptImageDecodeCache=new Map();
+ receiptWarmPhotos(photoData);
  const preload=photoData.map(src=>decodeImage(src));
- try{await Promise.all(preload);}catch(e){receiptImageDecodeCache=null;throw e;}
+ try{await Promise.all(preload);}catch(e){throw e;}
  // Render photos and table only once. Size fallback resamples pixels instead of decoding/redrawing each image.
  const master=document.createElement('canvas');
  master.width=1600;master.height=fullHeight;
@@ -878,7 +885,7 @@ async function createCombinedReceiptPng(photoData=photos){
   }
   reduced.width=1;reduced.height=1;
   throw Error('PNG 파일이 서버 전송 용량을 초과했습니다. 사진 수를 줄여 저장하세요.');
- }finally{master.width=1;master.height=1;receiptImageDecodeCache=null;}
+ }finally{master.width=1;master.height=1;}
 }
 function combinedReceiptFilename(){return fileBaseName()+'.png'}
 // Prefer higher resolution; adapt quality and pixel size to remain under GAS per-photo limit.
@@ -922,21 +929,21 @@ async function readPhotos(files){
   const converted=new Array(files.length);let next=0;
   async function worker(){while(next<files.length){const index=next++;converted[index]=await resizePhoto(files[index]);}}
   await Promise.all(Array.from({length:Math.min(3,files.length)},()=>worker()));
-  photos.push(...converted);selectedPhoto=photos.length-1;syncPhotos();notice('첨부 '+photos.length+'장');
+  photos.push(...converted);selectedPhoto=photos.length-1;receiptWarmPhotos(photos);syncPhotos();notice('첨부 '+photos.length+'장');
  }catch(e){notice(e.message)}finally{receiptPhotosProcessing=false;}
 }
 function readPhoto(file){return readPhotos(file?[file]:[])}
 async function startCamera(){try{if(!navigator.mediaDevices?.getUserMedia)throw Error('브라우저 카메라를 사용할 수 없습니다.');stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'},width:{ideal:1920}},audio:false});$('video').srcObject=stream;$('cameraOverlay').classList.add('open')}catch(e){stopCamera();$('cameraFile').click();notice('기본 카메라 앱으로 전환합니다.')}}
 function stopCamera(){if(stream){stream.getTracks().forEach(t=>t.stop());stream=null}$('video').srcObject=null;$('cameraOverlay').classList.remove('open')}
-function takePhoto(){const v=$('video');if(!v.videoWidth){notice('카메라 준비 중입니다.');return}if(photos.length>=8){stopCamera();notice('최대 8장입니다.');return}const can=document.createElement('canvas'),s=Math.min(1,1600/Math.max(v.videoWidth,v.videoHeight));can.width=Math.round(v.videoWidth*s);can.height=Math.round(v.videoHeight*s);can.getContext('2d').drawImage(v,0,0,can.width,can.height);photos.push(receiptEncodeJpeg(can));selectedPhoto=photos.length-1;stopCamera();syncPhotos()}
+function takePhoto(){const v=$('video');if(!v.videoWidth){notice('카메라 준비 중입니다.');return}if(photos.length>=8){stopCamera();notice('최대 8장입니다.');return}const can=document.createElement('canvas'),s=Math.min(1,1600/Math.max(v.videoWidth,v.videoHeight));can.width=Math.round(v.videoWidth*s);can.height=Math.round(v.videoHeight*s);can.getContext('2d').drawImage(v,0,0,can.width,can.height);photos.push(receiptEncodeJpeg(can));selectedPhoto=photos.length-1;receiptWarmPhotos(photos);stopCamera();syncPhotos()}
 function saved(){try{return JSON.parse(localStorage.getItem(KEY)||'[]')}catch{return []}}function setSaved(x){localStorage.setItem(KEY,JSON.stringify(x))}
 function record(){return{id:currentId||('r'+Date.now().toString(36)+Math.random().toString(36).slice(2)),dept:$('dept').value,name:selectedName(),...Object.fromEntries(fields.map(id=>[id,$(id).value])),folderUrl,baseVersion:cloudVersion,updated:new Date().toISOString()}}
 function refreshSaved(){const rows=saved().sort((a,b)=>b.updated.localeCompare(a.updated));$('savedList').innerHTML='<option value="">새 양식 / 저장본 선택</option>'+rows.map(r=>`<option value="${esc(r.id)}">${esc(r.name||'미지정')} · ${esc(r.approval||'승인번호 없음')} · ${esc((r.updated||'').slice(0,10))}</option>`).join('');$('savedList').value=currentId}
 function openDb(){return dbPromise||(dbPromise=new Promise((res,rej)=>{const q=indexedDB.open('receiptTemplatePhotosV1',1);q.onupgradeneeded=()=>q.result.createObjectStore('photos');q.onsuccess=()=>res(q.result);q.onerror=()=>rej(q.error)}))}
 async function photoOp(id,value,mode){const db=await openDb();return new Promise((res,rej)=>{const tx=db.transaction('photos',mode==='get'?'readonly':'readwrite'),s=tx.objectStore('photos');const r=mode==='get'?s.get(id):mode==='delete'?s.delete(id):s.put(value,id);r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)})}
 async function saveRecord(){const r=record();try{await photoOp(r.id,photos,'put');const list=saved().filter(e=>e.id!==r.id);list.push(r);setSaved(list);currentId=r.id;refreshSaved();notice('양식을 저장했습니다.')}catch(e){notice('저장 실패: 저장 공간 또는 브라우저 설정을 확인하세요.')}}
-function clearForm(){receiptSetSaveComplete(false);lastCompletedSaveSignature='';const category=$('category').value;const aircraft=$('aircraft').value;const previousName=$('name').value;currentId='';cloudVersion='';pendingSaveToken='';pendingSaveSignature='';fillNames(previousName);for(const id of fields)$(id).value='';$('category').value=category;$('aircraft').value=aircraft;$('details').value='케이터링_';photos=[];selectedPhoto=0;folderUrl='';syncPhotos();refreshSaved();render()}
-async function loadRecord(id){receiptSetSaveComplete(false);lastCompletedSaveSignature='';if(!id)return clearForm();const r=saved().find(x=>x.id===id);if(!r)return;currentId=id;cloudVersion=r.baseVersion||'';pendingSaveToken='';pendingSaveSignature='';fillNames(r.name||'');for(const k of fields)$(k).value=r[k]||'';try{{const savedPhotos=await photoOp(id,null,'get');photos=Array.isArray(savedPhotos)?savedPhotos:(savedPhotos?[savedPhotos]:[]);selectedPhoto=0;folderUrl=r.folderUrl||'';syncPhotos()}}catch{photos=[];selectedPhoto=0;folderUrl='';syncPhotos()}render();refreshSaved();notice('저장된 양식을 불러왔습니다.')}
+function clearForm(){receiptSetSaveComplete(false);lastCompletedSaveSignature='';const category=$('category').value;const aircraft=$('aircraft').value;const previousName=$('name').value;currentId='';cloudVersion='';pendingSaveToken='';pendingSaveSignature='';fillNames(previousName);for(const id of fields)$(id).value='';$('category').value=category;$('aircraft').value=aircraft;$('details').value='케이터링_';photos=[];selectedPhoto=0;folderUrl='';receiptWarmPhotos(photos);syncPhotos();refreshSaved();render()}
+async function loadRecord(id){receiptSetSaveComplete(false);lastCompletedSaveSignature='';if(!id)return clearForm();const r=saved().find(x=>x.id===id);if(!r)return;currentId=id;cloudVersion=r.baseVersion||'';pendingSaveToken='';pendingSaveSignature='';fillNames(r.name||'');for(const k of fields)$(k).value=r[k]||'';try{{const savedPhotos=await photoOp(id,null,'get');photos=Array.isArray(savedPhotos)?savedPhotos:(savedPhotos?[savedPhotos]:[]);selectedPhoto=0;folderUrl=r.folderUrl||'';receiptWarmPhotos(photos);syncPhotos()}}catch{photos=[];selectedPhoto=0;folderUrl='';syncPhotos()}render();refreshSaved();notice('저장된 양식을 불러왔습니다.')}
 async function deleteRecord(){if(!currentId){notice('삭제할 저장본을 선택하세요.');return}if(!confirm('선택한 저장본을 삭제하시겠습니까?'))return;try{await photoOp(currentId,null,'delete');setSaved(saved().filter(x=>x.id!==currentId));clearForm();notice('삭제했습니다.')}catch(e){notice('삭제하지 못했습니다.')}}
 // Google Apps Script HTML form bridge: avoids GitHub Pages-to-Apps Script CORS restrictions.
 function backendAddress(){const url=$('backendUrl').value.trim();if(!/^https:\/\/script\.google\.com\/macros\/s\/[\w-]+\/exec$/.test(url))throw Error('유효한 Apps Script /exec URL을 입력하세요.');return url}
@@ -1065,6 +1072,15 @@ function receiptSaveSignature(r){
  // 원본 이미지 전부를 복사/직렬화하지 않고 변경 여부만 확인합니다.
  return JSON.stringify(values)+'|'+photos.map(p=>String(p.length)+':'+p.slice(0,96)+':'+p.slice(-96)).join('|');
 }
+// The PNG contains receipt details: reuse ONLY for exactly the same signature.
+let receiptPreparedPng=null;
+function receiptPngForSignature(signature){
+ if(receiptPreparedPng && receiptPreparedPng.signature===signature)return receiptPreparedPng.promise;
+ const promise=createCombinedReceiptPng();
+ receiptPreparedPng={signature,promise};
+ promise.catch(()=>{if(receiptPreparedPng?.promise===promise)receiptPreparedPng=null;});
+ return promise;
+}
 $('cloudSave').addEventListener('click',()=>{
  if(cloudBusy)return; // 연타/복수 저장 요청을 시작 단계에서 차단
  runCloud('클라우드 저장',async()=>{
@@ -1088,7 +1104,7 @@ $('cloudSave').addEventListener('click',()=>{
   const originalLabel=saveButton.textContent;
   saveButton.textContent='저장 중…';
   const beganAt=performance.now();
-  const pngTask=createCombinedReceiptPng();
+  const pngTask=receiptPngForSignature(signature);
   // Attach an early rejection handler so an image failure doesn't become unhandled
   // while the separate list lookup completes.
   const safePngTask=pngTask.then(value=>({ok:true,value}),error=>({ok:false,error}));
@@ -1120,7 +1136,7 @@ $('cloudSave').addEventListener('click',()=>{
    const data=await cloudRequest('save',{payload:JSON.stringify({...r,photos,outputs,names,baseVersion:cloudVersion,saveToken:pendingSaveToken})});
    console.info('[CABIN RECEIPT] save elapsed',Math.round(performance.now()-beganAt),'ms; photos',photos.length);
    currentId=data.id;cloudVersion=data.baseVersion||data.updated||'';
-   pendingSaveToken='';pendingSaveSignature='';folderUrl=data.folderUrl||'';
+   pendingSaveToken='';pendingSaveSignature='';folderUrl=data.folderUrl||'';receiptPreparedPng=null;
    // 서버 저장 완료를 즉시 표시. 브라우저의 보조 로컬 보관은 뒤에서 처리합니다.
    lastCompletedSaveSignature=signature;
    receiptSetSaveComplete(true);
@@ -1143,11 +1159,11 @@ $('cloudSave').addEventListener('click',()=>{
   } finally {saveButton.disabled=false;cloudButton.disabled=false;saveButton.textContent=originalLabel;}
  });
 });
-$('cloudLoad').addEventListener('click',()=>runCloud('클라우드 불러오기',async()=>{receiptSetSaveComplete(false);lastCompletedSaveSignature='';const id=$('cloudList').value;if(!id)throw Error('클라우드 저장본을 먼저 선택하세요.');const d=await cloudRequest('load',{id});const r=d.record;currentId=r.id;cloudVersion=r.version||r.updated||'';pendingSaveToken='';pendingSaveSignature='';fillNames(r.name||'');for(const k of fields)$(k).value=r[k]||'';photos=d.photos|| (d.photo?[d.photo]:[]);selectedPhoto=0;folderUrl=d.folderUrl||r.folderUrl||'';syncPhotos();cloudStatus('클라우드 양식을 불러왔습니다. 필요한 경우 양식 저장을 눌러 기기에도 보관하세요.')}));
+$('cloudLoad').addEventListener('click',()=>runCloud('클라우드 불러오기',async()=>{receiptSetSaveComplete(false);lastCompletedSaveSignature='';const id=$('cloudList').value;if(!id)throw Error('클라우드 저장본을 먼저 선택하세요.');const d=await cloudRequest('load',{id});const r=d.record;currentId=r.id;cloudVersion=r.version||r.updated||'';pendingSaveToken='';pendingSaveSignature='';fillNames(r.name||'');for(const k of fields)$(k).value=r[k]||'';photos=d.photos|| (d.photo?[d.photo]:[]);receiptWarmPhotos(photos);selectedPhoto=0;folderUrl=d.folderUrl||r.folderUrl||'';syncPhotos();cloudStatus('클라우드 양식을 불러왔습니다. 필요한 경우 양식 저장을 눌러 기기에도 보관하세요.')}));
 $('cloudDelete').addEventListener('click',()=>runCloud('클라우드 삭제',async()=>{const id=$('cloudList').value;if(!id)throw Error('삭제할 저장본을 선택하세요.');if(!confirm('클라우드 저장본을 영구 삭제하시겠습니까?'))return;await cloudRequest('delete',{id});if(cloudListLoaded){cachedCloudRecords=cachedCloudRecords.filter(x=>x.id!==id);paintCloudList()}cloudStatus('클라우드 저장본 삭제 완료 (서버 호출 1회)')}));
 $('backendUrl').value='https://script.google.com/macros/s/AKfycbxrPy3v5wpemZXx-kyqlA6Dr3L0hybiyTHKFqtRxs3fizPS_Uor1Cno6fiegrQ2OOYHXA/exec';
 $('name').addEventListener('change',()=>{syncSelectedStaff();render()});for(const k of fields)$(k).addEventListener('input',render);
-$('uploadArea').addEventListener('click',()=>{if(!$('albumFile').disabled)$('albumFile').click()});$('uploadArea').addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();$('albumFile').click()}});$('cameraBtn').addEventListener('click',startCamera);$('albumBtn').addEventListener('click',()=>$('albumFile').click());$('cameraFile').addEventListener('change',e=>{readPhotos([...e.target.files]);e.target.value=''});$('albumFile').addEventListener('change',e=>{readPhotos([...e.target.files]);e.target.value=''});$('removePhoto').addEventListener('click',()=>{if(!photos.length)return;photos.splice(selectedPhoto,1);selectedPhoto=Math.max(0,Math.min(selectedPhoto,photos.length-1));syncPhotos()});$('closeCamera').addEventListener('click',stopCamera);$('takePhoto').addEventListener('click',takePhoto);$('saveBtn').addEventListener('click',saveRecord);$('newBtn').addEventListener('click',clearForm);$('savedList').addEventListener('change',e=>loadRecord(e.target.value));$('deleteBtn').addEventListener('click',deleteRecord);$('printBtn').addEventListener('click',()=>window.print());$('pngBtn').addEventListener('click',()=>downloadReceiptPng().catch(e=>notice(e.message)));window.addEventListener('beforeunload',stopCamera);staffInit();refreshSaved();render();
+$('uploadArea').addEventListener('click',()=>{if(!$('albumFile').disabled)$('albumFile').click()});$('uploadArea').addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();$('albumFile').click()}});$('cameraBtn').addEventListener('click',startCamera);$('albumBtn').addEventListener('click',()=>$('albumFile').click());$('cameraFile').addEventListener('change',e=>{readPhotos([...e.target.files]);e.target.value=''});$('albumFile').addEventListener('change',e=>{readPhotos([...e.target.files]);e.target.value=''});$('removePhoto').addEventListener('click',()=>{if(!photos.length)return;photos.splice(selectedPhoto,1);receiptWarmPhotos(photos);selectedPhoto=Math.max(0,Math.min(selectedPhoto,photos.length-1));syncPhotos()});$('closeCamera').addEventListener('click',stopCamera);$('takePhoto').addEventListener('click',takePhoto);$('saveBtn').addEventListener('click',saveRecord);$('newBtn').addEventListener('click',clearForm);$('savedList').addEventListener('change',e=>loadRecord(e.target.value));$('deleteBtn').addEventListener('click',deleteRecord);$('printBtn').addEventListener('click',()=>window.print());$('pngBtn').addEventListener('click',()=>downloadReceiptPng().catch(e=>notice(e.message)));window.addEventListener('beforeunload',stopCamera);staffInit();refreshSaved();render();
   
 // Compact UI navigation: one create screen, one cloud list.
 function showCabinPage(page){
