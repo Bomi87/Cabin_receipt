@@ -1080,30 +1080,36 @@ $('cloudSave').addEventListener('click',()=>{
    cloudStatus('이미 저장한 영수증입니다. 중복 파일을 생성하지 않았습니다.');
    return;
   }
-  // 승인번호는 카드사/날짜마다 재사용될 수 있으므로 동일 번호만으로 저장을 막지 않습니다.
-  // 중복 가능성을 미리 알려주되 사용자가 확인하면 새 고유 기록 ID로 저장합니다.
-  if(!cloudListLoaded){
-   const dupList=await cloudRequest('list');
-   cachedCloudRecords=dupList.records||[];
-   cloudListLoaded=true;
-   paintCloudList();
-  }
+  // Fast path: PNG rendering and initial duplicate-list query proceed concurrently.
+  // Keep duplicate warning and server-side save validation unchanged.
+  receiptSetSaveComplete(false);
+  const saveButton=$('topSave'), cloudButton=$('cloudSave');
+  saveButton.disabled=true;cloudButton.disabled=true;
+  const originalLabel=saveButton.textContent;
+  saveButton.textContent='저장 중…';
+  const beganAt=performance.now();
+  const pngTask=createCombinedReceiptPng();
+  // Attach an early rejection handler so an image failure doesn't become unhandled
+  // while the separate list lookup completes.
+  const safePngTask=pngTask.then(value=>({ok:true,value}),error=>({ok:false,error}));
+  try{
+   if(!cloudListLoaded){
+    const dupList=await cloudRequest('list');
+    cachedCloudRecords=dupList.records||[];
+    cloudListLoaded=true;
+    paintCloudList();
+   }
   const possiblyDuplicate=cachedCloudRecords.filter(x=>x.id!==r.id && String(x.approval||'').trim()===String(r.approval||'').trim());
   if(possiblyDuplicate.length){
    const identical=possiblyDuplicate.filter(x=>Number(x.amount||0)===Number(r.amount||0) && String(x.tripDate||'')===String(r.tripDate||''));
    const promptText= identical.length
      ? '같은 승인번호·금액·트립시작일의 영수증이 '+identical.length+'건 있습니다.\n\n이미 제출한 영수증인지 확인하세요.\n별도 거래가 맞다면 [확인]을 눌러 저장할 수 있습니다.'
      : '같은 승인번호를 가진 영수증이 '+possiblyDuplicate.length+'건 있습니다.\n승인번호는 서로 다른 거래에서 재사용될 수 있습니다.\n\n별도 거래로 저장하시겠습니까?';
-   if(!confirm(promptText))return;
+   if(!confirm(promptText))throw Error("저장이 취소되었습니다.");
   }
-  receiptSetSaveComplete(false);
-  const saveButton=$('topSave'), cloudButton=$('cloudSave');
-  saveButton.disabled=true;cloudButton.disabled=true;
-  const originalLabel=saveButton.textContent;
-  saveButton.textContent='저장 중…';
-  try{
-   // 무손실 PNG 완성본을 한번 생성하여 전송합니다.
-   const combinedPng=await createCombinedReceiptPng();
+   const pngResult=await safePngTask;
+   if(!pngResult.ok)throw pngResult.error;
+   const combinedPng=pngResult.value;
    if(photos.reduce((n,p)=>n+p.length,0)+combinedPng.length>RECEIPT_MAX_TOTAL_BASE64)throw Error('이미지 전송 용량을 초과했습니다.');
    const outputs=[combinedPng];
    const names=[combinedReceiptFilename()];
@@ -1112,6 +1118,7 @@ $('cloudSave').addEventListener('click',()=>{
    if(pendingSaveSignature!==signature){pendingSaveToken='';pendingSaveSignature=signature;}
    if(!pendingSaveToken)pendingSaveToken='save_'+Date.now().toString(36)+'_'+Math.random().toString(36).slice(2);
    const data=await cloudRequest('save',{payload:JSON.stringify({...r,photos,outputs,names,baseVersion:cloudVersion,saveToken:pendingSaveToken})});
+   console.info('[CABIN RECEIPT] save elapsed',Math.round(performance.now()-beganAt),'ms; photos',photos.length);
    currentId=data.id;cloudVersion=data.baseVersion||data.updated||'';
    pendingSaveToken='';pendingSaveSignature='';folderUrl=data.folderUrl||'';
    // 서버 저장 완료를 즉시 표시. 브라우저의 보조 로컬 보관은 뒤에서 처리합니다.
