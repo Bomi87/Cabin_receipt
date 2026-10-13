@@ -1,1218 +1,523 @@
 <!DOCTYPE html>
-
 <html lang="ko">
-<head>
-<meta charset="utf-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover"/>
-<title>
+ <head>
+  <meta charset="utf-8"/>
+  <meta content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" name="viewport"/>
+  <title>
    영수증 양식 만들기
   </title>
-<style>
-   :root{--blue:#1765d1;--ink:#17263b;--muted:#67778b;--line:#d9e2ed;--bg:#f3f6fb}*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif}button,input,select{font:inherit}input,select,textarea{font-size:16px}button{cursor:pointer;touch-action:manipulation}header{background:#142841;color:#fff;padding:19px max(18px,calc((100vw - 1200px)/2));font-size:20px;font-weight:800}.shell{max-width:1200px;margin:auto;padding:18px}.intro{color:var(--muted);font-size:13px;margin:0 0 16px}.layout{display:grid;grid-template-columns:minmax(330px,440px) minmax(0,1fr);gap:16px}.panel{background:#fff;border:1px solid var(--line);border-radius:14px;padding:18px;min-width:0;box-shadow:0 4px 20px rgba(20,40,65,.03)}h2{font-size:17px;margin:0 0 16px}h3{font-size:14px;margin:0 0 10px}.field{display:block;margin-bottom:13px;font-size:13px;color:#53677e;font-weight:650}.field input,.field select{display:block;width:100%;height:46px;border-radius:9px;border:1px solid #ccd8e5;background:#fff;color:var(--ink);padding:0 12px;margin-top:6px;font-size:16px;min-width:0}.two{display:grid;grid-template-columns:1fr 1fr;gap:12px}.actions{display:flex;gap:9px;flex-wrap:wrap}.btn{border:1px solid #cbd7e5;border-radius:9px;background:#fff;padding:11px 13px;font-weight:700;color:#31506f;min-height:44px}.btn.primary{color:#fff;background:var(--blue);border-color:var(--blue)}.btn.green{background:#14804a;border-color:#14804a;color:white}.btn.red{color:#a73740}.small{font-size:12px;color:var(--muted);line-height:1.5}.uploader{border:2px dashed #bfd0e4;border-radius:12px;background:#f7faff;padding:17px;text-align:center;margin:12px 0}.uploader img{width:auto;max-width:100%;max-height:210px;object-fit:contain;border-radius:6px}.uploader .blank{padding:22px 8px;color:#70829a}.saved{margin-top:20px}.saved select{height:43px;max-width:100%;width:100%;border:1px solid var(--line);border-radius:8px;padding:0 10px;background:white;font-size:15px}.preview-top{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:10px;flex-wrap:wrap}.preview-top h2{margin:0}.paperwrap{background:#e9eef4;padding:14px;border-radius:10px;overflow:auto}.paper{background:white;margin:auto;box-shadow:0 3px 20px #132a4730;width:100%;min-height:320px;padding:12px}.receipt-grid{display:grid;grid-template-columns:65% 35%;border:1.5px solid #333;min-height:315px}.receipt-photo{border-right:1.5px solid #333;display:flex;align-items:center;justify-content:center;overflow:hidden;min-width:0;background:#fff}.receipt-photo img{max-width:100%;max-height:100%;width:100%;height:auto;object-fit:contain}.receipt-photo .ph{color:#999;font-size:13px}.receipt-info{min-width:0;display:flex;flex-direction:column}.line{display:grid;grid-template-columns:32% 68%;border-bottom:1px solid #333;min-height:44px;overflow:hidden}.line:last-child{border-bottom:0}.line .k{font-size:13px;font-weight:750;background:#f1f2f4;padding:12px 8px;display:flex;align-items:center;justify-content:center;text-align:center;border-right:1px solid #333;word-break:keep-all}.line .v{padding:10px 9px;font-size:14px;font-weight:650;align-self:center;overflow-wrap:anywhere}.noteblock{display:grid;grid-template-columns:25% 75%;flex:1}.noteblock>.k{font-weight:750;background:#f1f2f4;border-right:1px solid #333;display:flex;align-items:center;justify-content:center;font-size:13px}.note-rows{display:grid;grid-template-rows:repeat(4,minmax(42px,1fr));min-width:0}.note-row{display:grid;grid-template-columns:38% 62%;border-bottom:1px solid #333}.note-row:last-child{border:0}.note-row .k{display:flex;align-items:center;justify-content:center;text-align:center;border-right:1px solid #333;background:#fafafa;font-size:12px;font-weight:700;padding:4px}.note-row .v{display:flex;align-items:center;padding:8px;font-size:13px;overflow-wrap:anywhere;min-width:0}.camera-overlay{position:fixed;inset:0;background:#050d17ed;z-index:100;display:none;align-items:center;justify-content:center;padding:12px}.camera-overlay.open{display:flex}.camera-body{width:min(96vw,540px)}video{width:100%;max-height:75vh;background:#000;object-fit:contain;border-radius:12px}.camera-controls{display:flex;gap:10px;margin-top:10px}.camera-controls button{flex:1}#toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);border-radius:9px;background:#152e46;color:#fff;padding:10px 15px;display:none;max-width:90vw;text-align:center;z-index:200}.hint{margin-top:12px;color:#66758b;font-size:12px;line-height:1.6}.syncbox{margin-top:18px;border-top:1px solid var(--line);padding-top:15px}.syncbox input{width:100%;height:46px;border:1px solid var(--line);border-radius:8px;padding:0 10px;font-size:16px;margin:5px 0 9px}.syncstatus{font-size:12px;color:#5a6e84;min-height:20px;margin-top:9px}.syncbox .actions{margin-bottom:8px}@media(max-width:850px){.layout{grid-template-columns:1fr}.shell{padding:12px}.paperwrap{padding:8px}.paper{padding:7px}.receipt-grid{min-height:290px}.line .k,.noteblock>.k{font-size:11px}.line .v,.note-row .v{font-size:12px}.note-row .k{font-size:10px}}@media(max-width:430px){.two{gap:9px}.receipt-grid{grid-template-columns:65% 35%}.line{grid-template-columns:36% 64%;min-height:40px}.line .k,.line .v{padding:6px 4px}.noteblock{grid-template-columns:23% 77%}.note-rows{grid-template-rows:repeat(4,minmax(45px,1fr))}.note-row{grid-template-columns:39% 61%}.note-row .v{padding:5px}.paper{padding:4px}}@media print{@page{size:A4 portrait;margin:12mm}html,body{background:white!important}header,.intro,.editor,.preview-top,.hint,#toast,.camera-overlay{display:none!important}.shell,.layout,.panel,.paperwrap,.paper{display:block!important;border:none!important;box-shadow:none!important;padding:0!important;margin:0!important;max-width:none!important;background:white!important}.layout>.panel:not(.preview){display:none!important}.paper{width:186mm!important;height:auto!important}.receipt-grid{height:76mm;min-height:76mm;grid-template-columns:65% 35%;break-inside:avoid;page-break-inside:avoid}.receipt-photo img{max-height:75mm}.line .k,.noteblock>.k{font-size:12px}.line .v,.note-row .v{font-size:12px}.note-row .k{font-size:11px}}
-
-/* iOS Safari / Android: prevent focus-triggered input zoom without disabling pinch zoom. */
-@media screen and (max-width: 850px) {
-  input:not([type="hidden"]):not([type="file"]),
-  select,
-  textarea {
-    font-size: 16px !important;
+  <style>    :root{--blue:#1765d1;--ink:#17263b;--muted:#67778b;--line:#d9e2ed;--bg:#f3f6fb}*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif}button,input,select{font:inherit}input,select,textarea{font-size:16px}button{cursor:pointer;touch-action:manipulation}header{background:#142841;color:#fff;padding:19px max(18px,calc((100vw - 1200px)/2));font-size:20px;font-weight:800}.shell{max-width:1200px;margin:auto;padding:18px}.intro{color:var(--muted);font-size:13px;margin:0 0 16px}.layout{display:grid;grid-template-columns:minmax(330px,440px) minmax(0,1fr);gap:16px}.panel{background:#fff;border:1px solid var(--line);border-radius:14px;padding:18px;min-width:0;box-shadow:0 4px 20px rgba(20,40,65,.03)}h2{font-size:17px;margin:0 0 16px}h3{font-size:14px;margin:0 0 10px}.field{display:block;margin-bottom:13px;font-size:13px;color:#53677e;font-weight:650}.field input,.field select{display:block;width:100%;height:46px;border-radius:9px;border:1px solid #ccd8e5;background:#fff;color:var(--ink);padding:0 12px;margin-top:6px;font-size:16px;min-width:0}.two{display:grid;grid-template-columns:1fr 1fr;gap:12px}.actions{display:flex;gap:9px;flex-wrap:wrap}.btn{border:1px solid #cbd7e5;border-radius:9px;background:#fff;padding:11px 13px;font-weight:700;color:#31506f;min-height:44px}.btn.primary{color:#fff;background:var(--blue);border-color:var(--blue)}.btn.green{background:#14804a;border-color:#14804a;color:white}.btn.red{color:#a73740}.small{font-size:12px;color:var(--muted);line-height:1.5}.uploader{border:2px dashed #bfd0e4;border-radius:12px;background:#f7faff;padding:17px;text-align:center;margin:12px 0}.uploader img{width:auto;max-width:100%;max-height:210px;object-fit:contain;border-radius:6px}.uploader .blank{padding:22px 8px;color:#70829a}.saved{margin-top:20px}.saved select{height:43px;max-width:100%;width:100%;border:1px solid var(--line);border-radius:8px;padding:0 10px;background:white;font-size:15px}.preview-top{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:10px;flex-wrap:wrap}.preview-top h2{margin:0}.paperwrap{background:#e9eef4;padding:14px;border-radius:10px;overflow:auto}.paper{background:white;margin:auto;box-shadow:0 3px 20px #132a4730;width:100%;min-height:320px;padding:12px}.receipt-grid{display:grid;grid-template-columns:65% 35%;border:1.5px solid #333;min-height:315px}.receipt-photo{border-right:1.5px solid #333;display:flex;align-items:center;justify-content:center;overflow:hidden;min-width:0;background:#fff}.receipt-photo img{max-width:100%;max-height:100%;width:100%;height:auto;object-fit:contain}.receipt-photo .ph{color:#999;font-size:13px}.receipt-info{min-width:0;display:flex;flex-direction:column}.line{display:grid;grid-template-columns:32% 68%;border-bottom:1px solid #333;min-height:44px;overflow:hidden}.line:last-child{border-bottom:0}.line .k{font-size:13px;font-weight:750;background:#f1f2f4;padding:12px 8px;display:flex;align-items:center;justify-content:center;text-align:center;border-right:1px solid #333;word-break:keep-all}.line .v{padding:10px 9px;font-size:14px;font-weight:650;align-self:center;overflow-wrap:anywhere}.noteblock{display:grid;grid-template-columns:25% 75%;flex:1}.noteblock>.k{font-weight:750;background:#f1f2f4;border-right:1px solid #333;display:flex;align-items:center;justify-content:center;font-size:13px}.note-rows{display:grid;grid-template-rows:repeat(4,minmax(42px,1fr));min-width:0}.note-row{display:grid;grid-template-columns:38% 62%;border-bottom:1px solid #333}.note-row:last-child{border:0}.note-row .k{display:flex;align-items:center;justify-content:center;text-align:center;border-right:1px solid #333;background:#fafafa;font-size:12px;font-weight:700;padding:4px}.note-row .v{display:flex;align-items:center;padding:8px;font-size:13px;overflow-wrap:anywhere;min-width:0}.camera-overlay{position:fixed;inset:0;background:#050d17ed;z-index:100;display:none;align-items:center;justify-content:center;padding:12px}.camera-overlay.open{display:flex}.camera-body{width:min(96vw,540px)}video{width:100%;max-height:75vh;background:#000;object-fit:contain;border-radius:12px}.camera-controls{display:flex;gap:10px;margin-top:10px}.camera-controls button{flex:1}#toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);border-radius:9px;background:#152e46;color:#fff;padding:10px 15px;display:none;max-width:90vw;text-align:center;z-index:200}.hint{margin-top:12px;color:#66758b;font-size:12px;line-height:1.6}.syncbox{margin-top:18px;border-top:1px solid var(--line);padding-top:15px}.syncbox input{width:100%;height:46px;border:1px solid var(--line);border-radius:8px;padding:0 10px;font-size:16px;margin:5px 0 9px}.syncstatus{font-size:12px;color:#5a6e84;min-height:20px;margin-top:9px}.syncbox .actions{margin-bottom:8px}@media(max-width:850px){.layout{grid-template-columns:1fr}.shell{padding:12px}.paperwrap{padding:8px}.paper{padding:7px}.receipt-grid{min-height:290px}.line .k,.noteblock>.k{font-size:11px}.line .v,.note-row .v{font-size:12px}.note-row .k{font-size:10px}}@media(max-width:430px){.two{gap:9px}.receipt-grid{grid-template-columns:65% 35%}.line{grid-template-columns:36% 64%;min-height:40px}.line .k,.line .v{padding:6px 4px}.noteblock{grid-template-columns:23% 77%}.note-rows{grid-template-rows:repeat(4,minmax(45px,1fr))}.note-row{grid-template-columns:39% 61%}.note-row .v{padding:5px}.paper{padding:4px}}@media print{@page{size:A4 portrait;margin:12mm}html,body{background:white!important}header,.intro,.editor,.preview-top,.hint,#toast,.camera-overlay{display:none!important}.shell,.layout,.panel,.paperwrap,.paper{display:block!important;border:none!important;box-shadow:none!important;padding:0!important;margin:0!important;max-width:none!important;background:white!important}.layout>.panel:not(.preview){display:none!important}.paper{width:186mm!important;height:auto!important}.receipt-grid{height:76mm;min-height:76mm;grid-template-columns:65% 35%;break-inside:avoid;page-break-inside:avoid}.receipt-photo img{max-height:75mm}.line .k,.noteblock>.k{font-size:12px}.line .v,.note-row .v{font-size:12px}.note-row .k{font-size:11px}}  /* iOS Safari / Android: prevent focus-triggered input zoom without disabling pinch zoom. */ @media screen and (max-width: 850px) {   input:not([type="hidden"]):not([type="file"]),   select,   textarea {     font-size: 16px !important;   }   html {     -webkit-text-size-adjust: 100%;     text-size-adjust: 100%;   } }  .photo-strip{display:flex;gap:8px;overflow-x:auto;padding:8px 0}.photo-chip{position:relative;flex:0 0 76px;border:2px solid #d9e2ed;background:white;border-radius:8px;padding:3px;cursor:pointer}.photo-chip.selected{border-color:#1765d1}.photo-chip img{width:68px;height:80px;object-fit:contain}.photo-chip small{display:block;text-align:center}.photo-chip .mini{position:absolute;top:0;right:0;background:#fff;color:#d33;border-radius:50%;border:1px solid #ddd;font-size:13px}.photo-strip:empty{display:none} @media print {.photo-strip,.photo-chip{display:none!important}}    /* CABIN RECEIPT responsive UI — visual-only revamp (existing functions preserved) */ :root{--blue:#235fc8;--ink:#1b2b43;--line:#e1e7f0;--bg:#f1f4f9} html{-webkit-text-size-adjust:100%;text-size-adjust:100%} body{line-height:1.5} header{padding:14px max(24px,calc((100vw - 1380px)/2 + 24px));background:#142742;box-shadow:0 2px 14px #10243c10;display:flex;align-items:center;gap:12px;flex-wrap:wrap} .brand{display:flex;align-items:center;gap:12px}.brand-icon{font-size:24px;display:grid;place-items:center;width:42px;height:42px;border-radius:12px;background:#ffffff1c;color:#cfe1ff} .brand strong,.brand small{display:block}.brand strong{font-size:15px;letter-spacing:.055em}.brand small{font-size:12px;font-weight:450;color:#d0def0;margin-top:1px} .shell{max-width:1380px;padding:25px 24px}.intro{margin:0 0 17px} .layout{grid-template-columns:minmax(0,520px) minmax(0,1fr);gap:22px;align-items:start} .panel{border-radius:18px;box-shadow:0 8px 30px #213b5a09;padding:22px} .editor{display:flex;flex-direction:column;gap:16px} .form-section{border:1px solid #e5ebf3;border-radius:14px;overflow:hidden;background:#fff} .section-heading{display:flex;gap:11px;align-items:center;padding:14px 16px;background:#f6f8fc;border-bottom:1px solid #e7edf5} .step{flex:0 0 30px;width:30px;height:30px;display:grid;place-items:center;background:#e5edfd;color:#2462c8;font-size:12px;font-weight:800;border-radius:9px} .section-heading h3{font-size:14px;margin:0;color:#233a58;font-weight:800}.section-heading p{margin:2px 0 0;color:#75869b;font-size:11px} .section-content{padding:17px 16px 8px}.section-content .two{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px} .field{font-size:12px;letter-spacing:-.015em;margin-bottom:13px}.field input,.field select,.syncbox input{height:45px;border-radius:10px;border-color:#d6deea;outline-offset:1px} .field input:focus,.field select:focus,.syncbox input:focus{border-color:var(--blue);outline:3px solid #2360cc1c} .field input[readonly]{background:#f3f6fb;color:#7b8da3;font-size:12px} .btn{border-radius:10px;padding:11px 14px;font-size:13px;min-height:43px;transition:background .15s ease,transform .1s ease}.btn:active{transform:scale(.98)} .actions{gap:8px}.actions .btn{flex:1 1 auto;white-space:nowrap} .uploader{border-radius:12px;margin:0 0 10px;min-height:134px;display:flex;align-items:center;justify-content:center;background:#f8fbff} .photo-strip{margin-bottom:8px}.photo-chip{flex-basis:72px} .saved{margin-top:0}.saved h3,.syncbox h3{font-size:13px;margin:0 0 10px;color:#2c435f}.saved select{font-size:16px} .syncbox{border:1px solid #e5ebf3;background:#f8fafe;border-radius:12px;padding:14px;margin:16px 0 8px} .syncbox .actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.syncbox .btn{width:100%;font-size:12px;min-width:0;white-space:normal} #cloudSave{background:#16824f;border-color:#16824f;color:white} .hint{font-size:11px;line-height:1.65;margin-top:9px;margin-bottom:11px} .preview{position:sticky;top:16px;min-width:0;padding:23px}.preview-eyebrow{font-size:11px;color:#6b85a5;font-weight:750;letter-spacing:.07em;margin-bottom:6px} .preview-top{align-items:center;margin-bottom:18px}.preview-top h2{font-size:19px}.paperwrap{background:#eef2f8;padding:18px;border:1px solid #e2e8f0;border-radius:13px}.paper{max-width:780px;min-height:400px;padding:18px} .receipt-grid{min-height:360px}.receipt-info{overflow-wrap:anywhere} @media(max-width:1020px){.layout{grid-template-columns:minmax(0,1fr)}.editor{max-width:none}.preview{position:static}.shell{max-width:760px}.preview-top{justify-content:flex-start}} @media(max-width:600px){header{padding:12px 15px}.brand-icon{width:36px;height:36px}.shell{padding:12px}.intro{margin:0 2px 12px;font-size:11px}.panel{padding:13px;border-radius:13px}.editor{gap:12px}.section-heading{padding:11px 12px}.section-content{padding:13px 12px 5px}.section-heading p{font-size:10px}.syncbox{padding:11px}.actions .btn{font-size:12px}.paperwrap{padding:7px}.paper{padding:7px;min-height:0}.preview{margin-bottom:24px}.preview-top{display:grid;grid-template-columns:1fr 1fr;gap:8px}.preview-top h2{grid-column:1/-1;font-size:16px}.preview-top .btn{padding:10px 6px;font-size:12px;white-space:normal}.receipt-grid{min-height:280px}.line .k,.noteblock>.k{font-size:10px}.line .v,.note-row .v{font-size:11px}} @media(max-width:375px){.section-content .two{grid-template-columns:1fr}.syncbox .actions{grid-template-columns:1fr}} @media print{.form-section,.preview-eyebrow{display:none!important}.preview{position:static!important;padding:0!important}}    .record-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:10px;margin-top:12px} .record-row{border:1px solid var(--line);border-radius:12px;background:#fff;padding:12px;display:flex;align-items:flex-start;gap:10px;cursor:pointer} .record-row input{width:20px;height:20px;flex-shrink:0;margin-top:3px} .record-title{font-size:14px;font-weight:800;overflow-wrap:anywhere} .record-meta{font-size:12px;color:#64748b;margin-top:5px;line-height:1.7} .record-meta a{color:#2463d7} #zipResult a{display:inline-block;margin:8px 0;padding:10px 14px;background:#e7f6ee;color:#116842;border-radius:9px;font-weight:800} @media(max-width:600px){.record-grid{grid-template-columns:1fr}}  .uploader[role="button"]{cursor:pointer;touch-action:manipulation}.uploader[role="button"]:focus-visible{outline:3px solid #235fc8;outline-offset:3px}.uploader[role="button"]:active{background:#edf5ff}  /* Save action positioned directly next to the completed receipt preview heading. */ .preview .preview-top{display:flex;align-items:center;justify-content:space-between;flex-wrap:nowrap;gap:12px} .preview .preview-top h2{margin:0;min-width:0;flex:1 1 auto} .preview-save{display:flex;align-items:center;gap:8px;flex:0 0 auto} .preview-save .toolbar-save{display:inline-flex;align-items:center;justify-content:center;min-width:96px} @media(max-width:600px){.preview .preview-top{display:flex;grid-template-columns:none;flex-wrap:nowrap}.preview .preview-top h2{grid-column:auto;font-size:15px}.preview-save .toolbar-save{min-width:76px}}  /* 저장 목록: 정렬 옵션 (버튼마다 오름차순/내림차순 토글) */ .records-sort-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:8px 0 12px} .records-sort-actions .sort-caption{font-size:12px;font-weight:700;color:#52647d;margin-right:3px} .records-sort-actions .btn{font-size:12px;padding:9px 12px;white-space:nowrap} .records-sort-actions .btn.active-sort{background:#235bc3;color:white;border-color:#235bc3}  /* 클라우드 저장 성공 시에만 나타나는 완료 상태 */ .preview .preview-save #topSaveStatus:not([hidden]){display:inline-flex!important;align-items:center;white-space:nowrap;font-size:14px;font-weight:800;color:#16824f;background:#e8f7ef;border:1px solid #bae5ce;border-radius:9px;padding:9px 12px} .preview .preview-save #topSaveStatus[hidden]{display:none!important} @media(max-width:600px){.preview .preview-save #topSaveStatus:not([hidden]){font-size:12px;padding:7px 9px}} /* iOS Safari: native picker controls must remain at least 16px on focus */ html{-webkit-text-size-adjust:100%;text-size-adjust:100%} input:not([type=hidden]):not([type=file]),select,textarea, .field input,.field select,.saved select,.syncbox input{font-size:16px!important;line-height:normal} @media (max-width:850px){input:not([type=hidden]):not([type=file]),select,textarea{font-size:16px!important}} </style>
+  <style> /* 2026-10-09 compact one-column receipt editor + separate newest-first list */ .shell{max-width:1180px;padding:18px 18px 60px} .layout{display:flex;flex-direction:column;gap:18px;align-items:stretch} .editor,.preview{width:100%;max-width:none;position:static;flex:none} .editor{display:flex;flex-direction:column;align-items:stretch;gap:14px} .editor .form-section{width:100%} .app-tabs{display:flex;gap:8px;margin-bottom:14px;border-bottom:1px solid #dce5f0;padding-bottom:10px} .tab-btn{border:1px solid #d2ddec;background:white;color:#34516f;border-radius:10px;padding:11px 18px;font-size:14px;font-weight:800;cursor:pointer} .tab-btn.active{background:#215fc5;border-color:#215fc5;color:white} .top-toolbar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px} .toolbar-right{display:flex;gap:10px;align-items:center} .toolbar-new{background:linear-gradient(135deg,#ff972f,#ef6c12)!important;color:#fff!important;border:1px solid #e86a11!important;border-radius:999px!important;min-width:116px;min-height:44px;padding:10px 20px!important;font-weight:900!important;letter-spacing:.6px;box-shadow:0 3px 9px rgba(211,92,13,.24)!important;display:inline-flex;gap:8px;align-items:center;justify-content:center;cursor:pointer} .toolbar-new:hover{background:linear-gradient(135deg,#f58624,#db5f0d)!important;box-shadow:0 5px 12px rgba(211,92,13,.3)!important} .toolbar-new:focus-visible{outline:3px solid #ffcf9c;outline-offset:3px} .toolbar-new:active{transform:translateY(1px)} .toolbar-save{background:#14804a!important;color:#fff!important;border-color:#14804a!important;min-width:128px} .preview{padding:20px} .preview-top{display:flex;justify-content:space-between;margin:0 0 12px} .paperwrap{padding:14px;overflow-x:auto} .paper{max-width:none;padding:13px;min-height:560px} .receipt-grid{grid-template-columns:52% 48%;min-height:520px} .receipt-photo{min-height:520px} .receipt-photo img{height:100%;width:100%;max-height:620px;object-fit:contain} .line{min-height:70px} .line .v{font-size:20px} .line .k,.noteblock>.k{font-size:14px} .note-row .k{font-size:13px} .note-row .v{font-size:17px} .uploader{min-height:260px} .uploader img{max-height:330px} .list-page[hidden],.layout[hidden],.top-toolbar[hidden]{display:none!important} .list-page{padding:22px} .list-head{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap} .list-head h2{margin:0 0 3px} .records-summary{font-size:12px;color:#6a7b90;margin:12px 0} .record-actions{display:flex;gap:9px;align-items:center;flex-wrap:wrap;margin:12px 0 16px} .records-table-wrap{overflow-x:auto;border:1px solid #e0e8f1;border-radius:11px} .record-grid{display:table;width:100%;min-width:930px;margin:0;border-collapse:collapse} .record-row{display:table-row;border:0;border-bottom:1px solid #e6edf5;border-radius:0;background:white;cursor:default} .record-row:hover{background:#f6f9ff} .record-row > .cloud-check{display:table-cell;vertical-align:middle;margin:9px 12px;width:18px;height:18px} .record-row > .record-cells{display:contents} .record-cell{display:table-cell;padding:10px 9px;vertical-align:middle;white-space:nowrap;font-size:13px;color:#263a50} .record-cell.folder a{color:#215fc5;font-weight:700} .record-head{display:table-row;background:#f0f4fa;font-size:12px;font-weight:800;color:#4f6380} .record-head > span{display:table-cell;padding:11px 9px;white-space:nowrap} .record-head > span:first-child{width:40px} @media(max-width:850px){  .shell{padding:12px 10px 50px}  .editor{display:flex;flex-direction:column}  .editor .form-section{width:100%}  .paper{min-height:0;padding:7px}  .receipt-grid{grid-template-columns:52% 48%;min-height:430px}  .receipt-photo{min-height:430px}  .receipt-photo img{max-height:490px}  .preview{padding:12px}  .list-page{padding:12px}  .top-toolbar{position:sticky;top:0;z-index:15;background:#f3f6fb;padding:8px 0} } @media(max-width:540px){  .app-tabs .tab-btn{flex:1;padding:10px 7px;font-size:12px}  .preview-top h2{font-size:15px}  .receipt-grid{min-height:310px}  .receipt-photo{min-height:310px}  .line{min-height:43px}  .line .v{font-size:12px;padding:5px}  .line .k,.noteblock>.k{font-size:10px}  .note-row .k{font-size:9px}  .note-row .v{font-size:11px;padding:5px}  .toolbar-save,.toolbar-new{min-width:84px}  .record-actions .btn{font-size:12px} } @media print{.app-tabs,.top-toolbar,.list-page{display:none!important}} </style>
+  <style id="two-column-restore-v2">
+/* CABIN RECEIPT: desktop editor LEFT, preview RIGHT; mobile stacked. */
+@media screen and (min-width: 820px) {
+  .shell { max-width: 1600px; padding: 18px 24px 60px; }
+  .layout:not([hidden]) { display: grid !important; grid-template-columns: minmax(320px, 38%) minmax(0, 1fr) !important; align-items: start !important; gap: 22px !important; flex-direction: initial !important; }
+  .layout > .editor, .layout > .preview { width: auto !important; max-width: none !important; min-width: 0 !important; }
+  .layout > .preview { position: sticky !important; top: 76px !important; }
+  .paper { max-width: none !important; }
+}
+@media screen and (max-width: 819px) {
+  .layout:not([hidden]) { display: flex !important; flex-direction: column !important; }
+  .layout > .editor, .layout > .preview { width: 100% !important; }
+}
+</style>
+  <style id="save-next-to-preview-heading"> /* Put the existing Google Drive save button immediately next to the preview title. */ .preview .preview-top{display:flex!important;justify-content:flex-start!important;align-items:center!important;flex-wrap:nowrap!important;gap:16px!important} .preview .preview-top h2{flex:0 1 auto!important;width:auto!important;min-width:0!important;margin:0!important} .preview .preview-save{display:flex!important;flex:0 0 auto!important;align-items:center!important;gap:8px!important} .preview .preview-save #topSave{display:inline-flex!important;visibility:visible!important;opacity:1!important;position:static!important;width:auto!important;min-width:105px!important;height:44px!important;padding:10px 22px!important;background:#14804a!important;color:white!important;border:1px solid #14804a!important;border-radius:9px!important;font-weight:800!important;cursor:pointer!important} @media(max-width:600px){.preview .preview-top{gap:10px!important}.preview .preview-top h2{font-size:15px!important}.preview .preview-save #topSave{min-width:76px!important;padding:9px 13px!important}} </style>
+  <style id="receipt-column-alignment-fix"> /* Make all upper label/value boundaries exactly match the note rows. */ .receipt-info{--note-section-width:25%;--note-label-width:38%;} .receipt-info>.line{grid-template-columns:53.5% 46.5%!important;} .receipt-info>.noteblock{grid-template-columns:25% 75%!important;} .receipt-info .note-row{grid-template-columns:38% 62%!important;} /* Uniform borders make the right-hand cells form one continuous grid. */ .receipt-info .line,.receipt-info .note-row{min-width:0;} @media(max-width:430px){.receipt-info>.line{grid-template-columns:53.5% 46.5%!important;}.receipt-info>.noteblock{grid-template-columns:25% 75%!important;}.receipt-info .note-row{grid-template-columns:38% 62%!important;}} </style>
+  <style id="ios-focus-and-grid-overlap-fix"> /* Prevent native date controls from forcing their grid track beyond 50%. */ .section-content,.section-content .two,.section-content .field{min-width:0;max-width:100%;} .section-content .two{grid-template-columns:repeat(2,minmax(0,1fr))!important;} .section-content .two>.field{width:100%;min-width:0;max-width:100%;overflow:visible;} .section-content .two>.field>input, .section-content .two>.field>select{width:100%!important;max-width:100%!important;min-width:0!important;box-sizing:border-box!important;} /* Date pickers have a platform intrinsic minimum size on iOS. */ #tripDate{display:block;width:100%!important;min-width:0!important;max-width:100%!important;-webkit-appearance:none;appearance:none;overflow:hidden;} #details{min-width:0!important;max-width:100%!important;} @media screen and (max-width:1020px){   html{-webkit-text-size-adjust:100%!important;text-size-adjust:100%!important;}   .field input:not([type="hidden"]),.field select,.syncbox input,   input[type="date"],input[type="number"],input[type="text"],select,textarea{     font-size:18px!important;line-height:normal!important;     -webkit-text-size-adjust:100%!important;   }   .section-content .two{gap:12px!important;}   input,select,textarea{touch-action:manipulation;} } @media screen and (max-width:360px){   .section-content .two{grid-template-columns:minmax(0,1fr)!important;} } </style>
+  <style id="ios-zoom-reference-app-fix"> /* Airport Data Search의 iPhone 확대 방지 설정과 동일한 방식. */ @media screen and (max-width: 1020px) {   html, body { -webkit-text-size-adjust: 100% !important; text-size-adjust: 100% !important; }   input:not([type="hidden"]):not([type="file"]),   select, textarea, .field input, .field select, .syncbox input {     font-size: 18px !important;     -webkit-text-size-adjust: 100% !important;   }   input[type="date"], input[type="number"], input[type="text"], select, textarea {     min-width: 0;     max-width: 100%;     box-sizing: border-box;   } } </style>
+  <style id="ios-tripdate-vertical-centering-fix"> /* iOS Safari can align the editable date segments to the top when line-height:normal and appearance:none override its native date field. */ #tripDate {   height: 45px !important;   min-height: 45px !important;   box-sizing: border-box !important;   padding: 0 12px !important;   line-height: 45px !important;   vertical-align: middle !important;   color: #1b2b43; } #tripDate::-webkit-date-and-time-value {   min-height: 100%;   height: 100%;   display: flex;   align-items: center;   text-align: left;   line-height: normal; } #tripDate::-webkit-datetime-edit {   display: inline-flex;   align-items: center;   min-height: 100%;   padding: 0;   line-height: normal; } #tripDate::-webkit-datetime-edit-fields-wrapper {   display: inline-flex;   align-items: center;   padding: 0; } #tripDate::-webkit-calendar-picker-indicator {   align-self: center;   margin: 0 0 0 auto; } </style>
+  <style id="portrait-first-receipt-layout"> /* 첫 사진은 세로형 양식, 정보표는 오른쪽. 빈 하단 영역 없이 표가 끝까지 연결됩니다. */ .receipt-grid{grid-template-columns:65% 35%!important;aspect-ratio:1600 / 1700;min-height:0!important;height:auto!important} .receipt-photo{min-height:0!important;height:100%!important} .receipt-photo img{width:100%;height:100%;max-height:none!important;object-fit:contain} .receipt-info{height:100%} /* 테이블 폭 확보 및 단일 행 표시: 좁은 미리보기 화면에서도 줄바꿈 방지 */ .receipt-info .line{grid-template-columns:35% 65%!important} .receipt-info .noteblock{grid-template-columns:18% 82%!important} .receipt-info .note-row{grid-template-columns:36% 64%!important} .receipt-info .line .k,.receipt-info .line .v,.receipt-info .noteblock>.k, .receipt-info .note-row .k,.receipt-info .note-row .v{   white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis;   word-break:normal!important;overflow-wrap:normal!important;min-width:0;   font-size:clamp(7px,0.85vw,11px)!important;padding:3px 2px!important; } .receipt-info .line .v,.receipt-info .note-row .v{font-size:clamp(8px,0.95vw,12px)!important;padding:3px 5px!important;display:block!important;align-content:center} @media(max-width:850px){.receipt-info .line .k,.receipt-info .line .v,.receipt-info .noteblock>.k,.receipt-info .note-row .k,.receipt-info .note-row .v{font-size:9px!important}} @media(max-width:430px){.receipt-info .line .k,.receipt-info .line .v,.receipt-info .noteblock>.k,.receipt-info .note-row .k,.receipt-info .note-row .v{font-size:7px!important;padding:2px 1px!important}} @media print{.receipt-grid{grid-template-columns:65% 35%!important;aspect-ratio:1600 / 1700;height:auto!important;min-height:0!important}.receipt-photo img{max-height:none!important}} </style>
+  <style id="receipt-unified-seven-rows"> /* All seven label/value cells share exactly the same vertical dividing line. */ .receipt-info>.line,.receipt-info .note-row{grid-template-columns:35% 65%!important;} .receipt-info>.noteblock{display:block!important;min-height:0;flex:1;} .receipt-info>.noteblock>.note-rows{display:grid!important;grid-template-rows:repeat(4,minmax(0,1fr))!important;height:100%!important;min-height:0;} .receipt-info .line .k,.receipt-info .line .v, .receipt-info .note-row .k,.receipt-info .note-row .v{   min-width:0;white-space:nowrap!important;word-break:normal!important;   overflow-wrap:normal!important;overflow:hidden;text-overflow:ellipsis; } @media(max-width:430px){.receipt-info>.line,.receipt-info .note-row{grid-template-columns:35% 65%!important;}} </style>
+  <style id="placeholder-light-color"> /* Input placeholders only: lighter color. */ .field input::placeholder, .syncbox input::placeholder, textarea::placeholder {   color: #d5dde7 !important;   opacity: 1 !important; } </style>
+  <style id="cabin-final-desktop-layout-fix">
+/* Desktop: left editor + right preview. Mobile retains vertical layout. */
+@media screen and (min-width: 1021px) {
+  #receiptProtectedRoot .shell { max-width: 1600px !important; width: 100% !important; margin: 0 auto !important; }
+  #receiptProtectedRoot main.shell > .layout:not([hidden]) {
+    display: grid !important;
+    grid-template-columns: minmax(390px, 510px) minmax(0, 1fr) !important;
+    grid-auto-flow: row !important;
+    flex-direction: initial !important;
+    gap: 22px !important;
+    align-items: start !important;
+    width: 100% !important;
   }
-  html {
-    -webkit-text-size-adjust: 100%;
-    text-size-adjust: 100%;
+  #receiptProtectedRoot main.shell > .layout > section.editor,
+  #receiptProtectedRoot main.shell > .layout > section.preview {
+    display: block !important;
+    width: auto !important;
+    min-width: 0 !important;
+    max-width: none !important;
+    margin: 0 !important;
   }
+  #receiptProtectedRoot main.shell > .layout > section.editor { grid-column: 1 !important; grid-row: 1 !important; }
+  #receiptProtectedRoot main.shell > .layout > section.preview { grid-column: 2 !important; grid-row: 1 !important; position: sticky !important; top: 76px !important; }
 }
-
-.photo-strip{display:flex;gap:8px;overflow-x:auto;padding:8px 0}.photo-chip{position:relative;flex:0 0 76px;border:2px solid #d9e2ed;background:white;border-radius:8px;padding:3px;cursor:pointer}.photo-chip.selected{border-color:#1765d1}.photo-chip img{width:68px;height:80px;object-fit:contain}.photo-chip small{display:block;text-align:center}.photo-chip .mini{position:absolute;top:0;right:0;background:#fff;color:#d33;border-radius:50%;border:1px solid #ddd;font-size:13px}.photo-strip:empty{display:none}
-@media print {.photo-strip,.photo-chip{display:none!important}}
-   /* CABIN RECEIPT responsive UI — visual-only revamp (existing functions preserved) */
-:root{--blue:#235fc8;--ink:#1b2b43;--line:#e1e7f0;--bg:#f1f4f9}
-html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
-body{line-height:1.5}
-header{padding:14px max(24px,calc((100vw - 1380px)/2 + 24px));background:#142742;box-shadow:0 2px 14px #10243c10;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
-.brand{display:flex;align-items:center;gap:12px}.brand-icon{font-size:24px;display:grid;place-items:center;width:42px;height:42px;border-radius:12px;background:#ffffff1c;color:#cfe1ff}
-.brand strong,.brand small{display:block}.brand strong{font-size:15px;letter-spacing:.055em}.brand small{font-size:12px;font-weight:450;color:#d0def0;margin-top:1px}
-.shell{max-width:1380px;padding:25px 24px}.intro{margin:0 0 17px}
-.layout{grid-template-columns:minmax(0,520px) minmax(0,1fr);gap:22px;align-items:start}
-.panel{border-radius:18px;box-shadow:0 8px 30px #213b5a09;padding:22px}
-.editor{display:flex;flex-direction:column;gap:16px}
-.form-section{border:1px solid #e5ebf3;border-radius:14px;overflow:hidden;background:#fff}
-.section-heading{display:flex;gap:11px;align-items:center;padding:14px 16px;background:#f6f8fc;border-bottom:1px solid #e7edf5}
-.step{flex:0 0 30px;width:30px;height:30px;display:grid;place-items:center;background:#e5edfd;color:#2462c8;font-size:12px;font-weight:800;border-radius:9px}
-.section-heading h3{font-size:14px;margin:0;color:#233a58;font-weight:800}.section-heading p{margin:2px 0 0;color:#75869b;font-size:11px}
-.section-content{padding:17px 16px 8px}.section-content .two{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
-.field{font-size:12px;letter-spacing:-.015em;margin-bottom:13px}.field input,.field select,.syncbox input{height:45px;border-radius:10px;border-color:#d6deea;outline-offset:1px}
-.field input:focus,.field select:focus,.syncbox input:focus{border-color:var(--blue);outline:3px solid #2360cc1c}
-.field input[readonly]{background:#f3f6fb;color:#7b8da3;font-size:12px}
-.btn{border-radius:10px;padding:11px 14px;font-size:13px;min-height:43px;transition:background .15s ease,transform .1s ease}.btn:active{transform:scale(.98)}
-.actions{gap:8px}.actions .btn{flex:1 1 auto;white-space:nowrap}
-.uploader{border-radius:12px;margin:0 0 10px;min-height:134px;display:flex;align-items:center;justify-content:center;background:#f8fbff}
-.photo-strip{margin-bottom:8px}.photo-chip{flex-basis:72px}
-.saved{margin-top:0}.saved h3,.syncbox h3{font-size:13px;margin:0 0 10px;color:#2c435f}.saved select{font-size:16px}
-.syncbox{border:1px solid #e5ebf3;background:#f8fafe;border-radius:12px;padding:14px;margin:16px 0 8px}
-.syncbox .actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.syncbox .btn{width:100%;font-size:12px;min-width:0;white-space:normal}
-#cloudSave{background:#16824f;border-color:#16824f;color:white}
-.hint{font-size:11px;line-height:1.65;margin-top:9px;margin-bottom:11px}
-.preview{position:sticky;top:16px;min-width:0;padding:23px}.preview-eyebrow{font-size:11px;color:#6b85a5;font-weight:750;letter-spacing:.07em;margin-bottom:6px}
-.preview-top{align-items:center;margin-bottom:18px}.preview-top h2{font-size:19px}.paperwrap{background:#eef2f8;padding:18px;border:1px solid #e2e8f0;border-radius:13px}.paper{max-width:780px;min-height:400px;padding:18px}
-.receipt-grid{min-height:360px}.receipt-info{overflow-wrap:anywhere}
-@media(max-width:1020px){.layout{grid-template-columns:minmax(0,1fr)}.editor{max-width:none}.preview{position:static}.shell{max-width:760px}.preview-top{justify-content:flex-start}}
-@media(max-width:600px){header{padding:12px 15px}.brand-icon{width:36px;height:36px}.shell{padding:12px}.intro{margin:0 2px 12px;font-size:11px}.panel{padding:13px;border-radius:13px}.editor{gap:12px}.section-heading{padding:11px 12px}.section-content{padding:13px 12px 5px}.section-heading p{font-size:10px}.syncbox{padding:11px}.actions .btn{font-size:12px}.paperwrap{padding:7px}.paper{padding:7px;min-height:0}.preview{margin-bottom:24px}.preview-top{display:grid;grid-template-columns:1fr 1fr;gap:8px}.preview-top h2{grid-column:1/-1;font-size:16px}.preview-top .btn{padding:10px 6px;font-size:12px;white-space:normal}.receipt-grid{min-height:280px}.line .k,.noteblock>.k{font-size:10px}.line .v,.note-row .v{font-size:11px}}
-@media(max-width:375px){.section-content .two{grid-template-columns:1fr}.syncbox .actions{grid-template-columns:1fr}}
-@media print{.form-section,.preview-eyebrow{display:none!important}.preview{position:static!important;padding:0!important}}
-  
-.record-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:10px;margin-top:12px}
-.record-row{border:1px solid var(--line);border-radius:12px;background:#fff;padding:12px;display:flex;align-items:flex-start;gap:10px;cursor:pointer}
-.record-row input{width:20px;height:20px;flex-shrink:0;margin-top:3px}
-.record-title{font-size:14px;font-weight:800;overflow-wrap:anywhere}
-.record-meta{font-size:12px;color:#64748b;margin-top:5px;line-height:1.7}
-.record-meta a{color:#2463d7}
-#zipResult a{display:inline-block;margin:8px 0;padding:10px 14px;background:#e7f6ee;color:#116842;border-radius:9px;font-weight:800}
-@media(max-width:600px){.record-grid{grid-template-columns:1fr}}
- .uploader[role="button"]{cursor:pointer;touch-action:manipulation}.uploader[role="button"]:focus-visible{outline:3px solid #235fc8;outline-offset:3px}.uploader[role="button"]:active{background:#edf5ff}
-
-/* Save action positioned directly next to the completed receipt preview heading. */
-.preview .preview-top{display:flex;align-items:center;justify-content:space-between;flex-wrap:nowrap;gap:12px}
-.preview .preview-top h2{margin:0;min-width:0;flex:1 1 auto}
-.preview-save{display:flex;align-items:center;gap:8px;flex:0 0 auto}
-.preview-save .toolbar-save{display:inline-flex;align-items:center;justify-content:center;min-width:96px}
-@media(max-width:600px){.preview .preview-top{display:flex;grid-template-columns:none;flex-wrap:nowrap}.preview .preview-top h2{grid-column:auto;font-size:15px}.preview-save .toolbar-save{min-width:76px}}
-
-/* 저장 목록: 정렬 옵션 (버튼마다 오름차순/내림차순 토글) */
-.records-sort-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:8px 0 12px}
-.records-sort-actions .sort-caption{font-size:12px;font-weight:700;color:#52647d;margin-right:3px}
-.records-sort-actions .btn{font-size:12px;padding:9px 12px;white-space:nowrap}
-.records-sort-actions .btn.active-sort{background:#235bc3;color:white;border-color:#235bc3}
-
-/* 클라우드 저장 성공 시에만 나타나는 완료 상태 */
-.preview .preview-save #topSaveStatus:not([hidden]){display:inline-flex!important;align-items:center;white-space:nowrap;font-size:14px;font-weight:800;color:#16824f;background:#e8f7ef;border:1px solid #bae5ce;border-radius:9px;padding:9px 12px}
-.preview .preview-save #topSaveStatus[hidden]{display:none!important}
-@media(max-width:600px){.preview .preview-save #topSaveStatus:not([hidden]){font-size:12px;padding:7px 9px}}
-/* iOS Safari: native picker controls must remain at least 16px on focus */
-html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
-input:not([type=hidden]):not([type=file]),select,textarea,
-.field input,.field select,.saved select,.syncbox input{font-size:16px!important;line-height:normal}
-@media (max-width:850px){input:not([type=hidden]):not([type=file]),select,textarea{font-size:16px!important}}
-</style>
-<style>
-/* 2026-10-09 compact one-column receipt editor + separate newest-first list */
-.shell{max-width:1180px;padding:18px 18px 60px}
-.layout{display:flex;flex-direction:column;gap:18px;align-items:stretch}
-.editor,.preview{width:100%;max-width:none;position:static;flex:none}
-.editor{display:flex;flex-direction:column;align-items:stretch;gap:14px}
-.editor .form-section{width:100%}
-.app-tabs{display:flex;gap:8px;margin-bottom:14px;border-bottom:1px solid #dce5f0;padding-bottom:10px}
-.tab-btn{border:1px solid #d2ddec;background:white;color:#34516f;border-radius:10px;padding:11px 18px;font-size:14px;font-weight:800;cursor:pointer}
-.tab-btn.active{background:#215fc5;border-color:#215fc5;color:white}
-.top-toolbar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px}
-.toolbar-right{display:flex;gap:10px;align-items:center}
-.toolbar-new{background:linear-gradient(135deg,#ff972f,#ef6c12)!important;color:#fff!important;border:1px solid #e86a11!important;border-radius:999px!important;min-width:116px;min-height:44px;padding:10px 20px!important;font-weight:900!important;letter-spacing:.6px;box-shadow:0 3px 9px rgba(211,92,13,.24)!important;display:inline-flex;gap:8px;align-items:center;justify-content:center;cursor:pointer}
-.toolbar-new:hover{background:linear-gradient(135deg,#f58624,#db5f0d)!important;box-shadow:0 5px 12px rgba(211,92,13,.3)!important}
-.toolbar-new:focus-visible{outline:3px solid #ffcf9c;outline-offset:3px}
-.toolbar-new:active{transform:translateY(1px)}
-.toolbar-save{background:#14804a!important;color:#fff!important;border-color:#14804a!important;min-width:128px}
-.preview{padding:20px}
-.preview-top{display:flex;justify-content:space-between;margin:0 0 12px}
-.paperwrap{padding:14px;overflow-x:auto}
-.paper{max-width:none;padding:13px;min-height:560px}
-.receipt-grid{grid-template-columns:52% 48%;min-height:520px}
-.receipt-photo{min-height:520px}
-.receipt-photo img{height:100%;width:100%;max-height:620px;object-fit:contain}
-.line{min-height:70px}
-.line .v{font-size:20px}
-.line .k,.noteblock>.k{font-size:14px}
-.note-row .k{font-size:13px}
-.note-row .v{font-size:17px}
-.uploader{min-height:260px}
-.uploader img{max-height:330px}
-.list-page[hidden],.layout[hidden],.top-toolbar[hidden]{display:none!important}
-.list-page{padding:22px}
-.list-head{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
-.list-head h2{margin:0 0 3px}
-.records-summary{font-size:12px;color:#6a7b90;margin:12px 0}
-.record-actions{display:flex;gap:9px;align-items:center;flex-wrap:wrap;margin:12px 0 16px}
-.records-table-wrap{overflow-x:auto;border:1px solid #e0e8f1;border-radius:11px}
-.record-grid{display:table;width:100%;min-width:930px;margin:0;border-collapse:collapse}
-.record-row{display:table-row;border:0;border-bottom:1px solid #e6edf5;border-radius:0;background:white;cursor:default}
-.record-row:hover{background:#f6f9ff}
-.record-row > .cloud-check{display:table-cell;vertical-align:middle;margin:9px 12px;width:18px;height:18px}
-.record-row > .record-cells{display:contents}
-.record-cell{display:table-cell;padding:10px 9px;vertical-align:middle;white-space:nowrap;font-size:13px;color:#263a50}
-.record-cell.folder a{color:#215fc5;font-weight:700}
-.record-head{display:table-row;background:#f0f4fa;font-size:12px;font-weight:800;color:#4f6380}
-.record-head > span{display:table-cell;padding:11px 9px;white-space:nowrap}
-.record-head > span:first-child{width:40px}
-@media(max-width:850px){
- .shell{padding:12px 10px 50px}
- .editor{display:flex;flex-direction:column}
- .editor .form-section{width:100%}
- .paper{min-height:0;padding:7px}
- .receipt-grid{grid-template-columns:52% 48%;min-height:430px}
- .receipt-photo{min-height:430px}
- .receipt-photo img{max-height:490px}
- .preview{padding:12px}
- .list-page{padding:12px}
- .top-toolbar{position:sticky;top:0;z-index:15;background:#f3f6fb;padding:8px 0}
-}
-@media(max-width:540px){
- .app-tabs .tab-btn{flex:1;padding:10px 7px;font-size:12px}
- .preview-top h2{font-size:15px}
- .receipt-grid{min-height:310px}
- .receipt-photo{min-height:310px}
- .line{min-height:43px}
- .line .v{font-size:12px;padding:5px}
- .line .k,.noteblock>.k{font-size:10px}
- .note-row .k{font-size:9px}
- .note-row .v{font-size:11px;padding:5px}
- .toolbar-save,.toolbar-new{min-width:84px}
- .record-actions .btn{font-size:12px}
-}
-@media print{.app-tabs,.top-toolbar,.list-page{display:none!important}}
-</style>
-<style id="two-column-restore-v2">
-/* Restore desktop editor-left / large-preview-right. All other features retained. */
-@media (min-width: 1021px){
- .shell{max-width:1600px;padding:18px 24px 60px}
- .layout:not([hidden]){display:grid!important;grid-template-columns:minmax(390px,510px) minmax(0,1fr)!important;align-items:start!important;gap:22px!important}
- .layout>.editor,.layout>.preview{width:auto!important;max-width:none!important;min-width:0!important}
- .layout>.preview{position:sticky!important;top:76px!important}
- .paper{max-width:none!important}
- .receipt-grid{grid-template-columns:52% 48%!important;min-height:520px!important}
- .receipt-photo{min-height:520px!important}
-}
-@media (max-width:1020px){
- .layout:not([hidden]){display:flex!important;flex-direction:column!important}
- .layout>.editor,.layout>.preview{width:100%!important}
-}
-/* Hide old management controls in favor of top toolbar and dedicated records tab. */
-.editor .saved,.editor .syncbox{display:none!important}
-.preview #printBtn,.preview #pngBtn{display:none!important}
-.preview .preview-top #topSave{display:inline-flex!important;align-items:center;justify-content:center;visibility:visible!important;opacity:1!important}
-</style>
-<style id="save-next-to-preview-heading">
-/* Put the existing Google Drive save button immediately next to the preview title. */
-.preview .preview-top{display:flex!important;justify-content:flex-start!important;align-items:center!important;flex-wrap:nowrap!important;gap:16px!important}
-.preview .preview-top h2{flex:0 1 auto!important;width:auto!important;min-width:0!important;margin:0!important}
-.preview .preview-save{display:flex!important;flex:0 0 auto!important;align-items:center!important;gap:8px!important}
-.preview .preview-save #topSave{display:inline-flex!important;visibility:visible!important;opacity:1!important;position:static!important;width:auto!important;min-width:105px!important;height:44px!important;padding:10px 22px!important;background:#14804a!important;color:white!important;border:1px solid #14804a!important;border-radius:9px!important;font-weight:800!important;cursor:pointer!important}
-@media(max-width:600px){.preview .preview-top{gap:10px!important}.preview .preview-top h2{font-size:15px!important}.preview .preview-save #topSave{min-width:76px!important;padding:9px 13px!important}}
-</style>
-<style id="receipt-column-alignment-fix">
-/* Make all upper label/value boundaries exactly match the note rows. */
-.receipt-info{--note-section-width:25%;--note-label-width:38%;}
-.receipt-info>.line{grid-template-columns:53.5% 46.5%!important;}
-.receipt-info>.noteblock{grid-template-columns:25% 75%!important;}
-.receipt-info .note-row{grid-template-columns:38% 62%!important;}
-/* Uniform borders make the right-hand cells form one continuous grid. */
-.receipt-info .line,.receipt-info .note-row{min-width:0;}
-@media(max-width:430px){.receipt-info>.line{grid-template-columns:53.5% 46.5%!important;}.receipt-info>.noteblock{grid-template-columns:25% 75%!important;}.receipt-info .note-row{grid-template-columns:38% 62%!important;}}
-</style>
-<style id="ios-focus-and-grid-overlap-fix">
-/* Prevent native date controls from forcing their grid track beyond 50%. */
-.section-content,.section-content .two,.section-content .field{min-width:0;max-width:100%;}
-.section-content .two{grid-template-columns:repeat(2,minmax(0,1fr))!important;}
-.section-content .two>.field{width:100%;min-width:0;max-width:100%;overflow:visible;}
-.section-content .two>.field>input,
-.section-content .two>.field>select{width:100%!important;max-width:100%!important;min-width:0!important;box-sizing:border-box!important;}
-/* Date pickers have a platform intrinsic minimum size on iOS. */
-#tripDate{display:block;width:100%!important;min-width:0!important;max-width:100%!important;-webkit-appearance:none;appearance:none;overflow:hidden;}
-#details{min-width:0!important;max-width:100%!important;}
-@media screen and (max-width:1020px){
-  html{-webkit-text-size-adjust:100%!important;text-size-adjust:100%!important;}
-  .field input:not([type="hidden"]),.field select,.syncbox input,
-  input[type="date"],input[type="number"],input[type="text"],select,textarea{
-    font-size:18px!important;line-height:normal!important;
-    -webkit-text-size-adjust:100%!important;
-  }
-  .section-content .two{gap:12px!important;}
-  input,select,textarea{touch-action:manipulation;}
-}
-@media screen and (max-width:360px){
-  .section-content .two{grid-template-columns:minmax(0,1fr)!important;}
-}
-</style>
-<style id="ios-zoom-reference-app-fix">
-/* Airport Data Search의 iPhone 확대 방지 설정과 동일한 방식. */
 @media screen and (max-width: 1020px) {
-  html, body { -webkit-text-size-adjust: 100% !important; text-size-adjust: 100% !important; }
-  input:not([type="hidden"]):not([type="file"]),
-  select, textarea, .field input, .field select, .syncbox input {
-    font-size: 18px !important;
-    -webkit-text-size-adjust: 100% !important;
-  }
-  input[type="date"], input[type="number"], input[type="text"], select, textarea {
-    min-width: 0;
-    max-width: 100%;
-    box-sizing: border-box;
-  }
+  #receiptProtectedRoot main.shell > .layout:not([hidden]) { display: flex !important; flex-direction: column !important; }
+  #receiptProtectedRoot main.shell > .layout > section.editor,
+  #receiptProtectedRoot main.shell > .layout > section.preview { width: 100% !important; }
 }
 </style>
-<style id="ios-tripdate-vertical-centering-fix">
-/* iOS Safari can align the editable date segments to the top when line-height:normal and appearance:none override its native date field. */
-#tripDate {
-  height: 45px !important;
-  min-height: 45px !important;
-  box-sizing: border-box !important;
-  padding: 0 12px !important;
-  line-height: 45px !important;
-  vertical-align: middle !important;
-  color: #1b2b43;
-}
-#tripDate::-webkit-date-and-time-value {
-  min-height: 100%;
-  height: 100%;
-  display: flex;
-  align-items: center;
-  text-align: left;
-  line-height: normal;
-}
-#tripDate::-webkit-datetime-edit {
-  display: inline-flex;
-  align-items: center;
-  min-height: 100%;
-  padding: 0;
-  line-height: normal;
-}
-#tripDate::-webkit-datetime-edit-fields-wrapper {
-  display: inline-flex;
-  align-items: center;
-  padding: 0;
-}
-#tripDate::-webkit-calendar-picker-indicator {
-  align-self: center;
-  margin: 0 0 0 auto;
-}
-</style>
-<style id="portrait-first-receipt-layout">
-/* 첫 사진은 세로형 양식, 정보표는 오른쪽. 빈 하단 영역 없이 표가 끝까지 연결됩니다. */
-.receipt-grid{grid-template-columns:65% 35%!important;aspect-ratio:1600 / 1700;min-height:0!important;height:auto!important}
-.receipt-photo{min-height:0!important;height:100%!important}
-.receipt-photo img{width:100%;height:100%;max-height:none!important;object-fit:contain}
-.receipt-info{height:100%}
-/* 테이블 폭 확보 및 단일 행 표시: 좁은 미리보기 화면에서도 줄바꿈 방지 */
-.receipt-info .line{grid-template-columns:35% 65%!important}
-.receipt-info .noteblock{grid-template-columns:18% 82%!important}
-.receipt-info .note-row{grid-template-columns:36% 64%!important}
-.receipt-info .line .k,.receipt-info .line .v,.receipt-info .noteblock>.k,
-.receipt-info .note-row .k,.receipt-info .note-row .v{
-  white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis;
-  word-break:normal!important;overflow-wrap:normal!important;min-width:0;
-  font-size:clamp(7px,0.85vw,11px)!important;padding:3px 2px!important;
-}
-.receipt-info .line .v,.receipt-info .note-row .v{font-size:clamp(8px,0.95vw,12px)!important;padding:3px 5px!important;display:block!important;align-content:center}
-@media(max-width:850px){.receipt-info .line .k,.receipt-info .line .v,.receipt-info .noteblock>.k,.receipt-info .note-row .k,.receipt-info .note-row .v{font-size:9px!important}}
-@media(max-width:430px){.receipt-info .line .k,.receipt-info .line .v,.receipt-info .noteblock>.k,.receipt-info .note-row .k,.receipt-info .note-row .v{font-size:7px!important;padding:2px 1px!important}}
-@media print{.receipt-grid{grid-template-columns:65% 35%!important;aspect-ratio:1600 / 1700;height:auto!important;min-height:0!important}.receipt-photo img{max-height:none!important}}
-</style>
-<style id="receipt-unified-seven-rows">
-/* All seven label/value cells share exactly the same vertical dividing line. */
-.receipt-info>.line,.receipt-info .note-row{grid-template-columns:35% 65%!important;}
-.receipt-info>.noteblock{display:block!important;min-height:0;flex:1;}
-.receipt-info>.noteblock>.note-rows{display:grid!important;grid-template-rows:repeat(4,minmax(0,1fr))!important;height:100%!important;min-height:0;}
-.receipt-info .line .k,.receipt-info .line .v,
-.receipt-info .note-row .k,.receipt-info .note-row .v{
-  min-width:0;white-space:nowrap!important;word-break:normal!important;
-  overflow-wrap:normal!important;overflow:hidden;text-overflow:ellipsis;
-}
-@media(max-width:430px){.receipt-info>.line,.receipt-info .note-row{grid-template-columns:35% 65%!important;}}
-</style>
-<style id="placeholder-light-color">
-/* Input placeholders only: lighter color. */
-.field input::placeholder,
-.syncbox input::placeholder,
-textarea::placeholder {
-  color: #d5dde7 !important;
-  opacity: 1 !important;
-}
-</style>
-</head>
-<body>
-<div id="receiptAuthScreen" style="min-height:100vh;display:flex;align-items:center;justify-content:center;background:#f2f5fa;padding:20px;font-family:Arial,sans-serif"><div style="width:min(100%,420px);border:1px solid #dbe3ef;background:white;border-radius:18px;padding:26px;text-align:center;box-shadow:0 10px 30px #14233812"><h2 style="margin:0 0 12px">CABIN RECEIPT</h2><p id="receiptAuthStatus" style="color:#52647b;font-size:14px;line-height:1.6">Google 계정을 확인하는 중입니다.</p><div id="receiptGoogleButton" style="display:flex;justify-content:center;margin-top:16px"></div></div></div>
-<div id="receiptProtectedRoot" style="display:none">
-<header>
-<div class="brand">
-<span class="brand-icon">
-     ▧
-    </span>
-<span>
-<strong>
-      CABIN RECEIPT
-     </strong>
-<small>
-      영수증 양식 관리
-     </small>
-</span>
-</div>
-<div id="receiptAccountBar" style="display:none;align-items:center;gap:9px;margin-left:auto;flex-wrap:wrap"><span id="receiptAccountEmail" style="font-size:12px;color:#f1f5f9;word-break:break-all"></span><button id="receiptSwitchAccount" type="button" style="border:1px solid #f4b8a8;background:#fff7ed;color:#9a3412;border-radius:12px;padding:9px 13px;cursor:pointer;font-weight:750;font-size:13px">계정 변경</button></div>
-</header>
-<main class="shell"><nav aria-label="화면 전환" class="app-tabs"><button class="tab-btn active" id="tabCreate" type="button">영수증 작성</button><button class="tab-btn" id="tabRecords" type="button">저장된 영수증 목록</button></nav>
-
-<div class="top-toolbar"><button class="btn toolbar-new" id="topNew" type="button"><span aria-hidden="true">＋</span> NEW</button></div><div class="layout">
-<section class="panel editor">
-<div class="form-section">
-<div class="section-heading">
-<span class="step">
-        01
-       </span>
-<div>
-<h3>
-         구성원 선택
-        </h3>
-<p>
-         CABIN_RECEIPT 스프레드시트의 구성원정보를 사용합니다.
-        </p>
-</div>
-</div>
-<div class="section-content">
-<label class="field" style="max-width:480px">
-        이름
-        <select disabled="" id="name"><option value="">구성원 정보를 불러오는 중...</option></select>
-</label>
-<input id="dept" type="hidden" value=""/>
-<p class="hint" id="staffStatus">구성원정보 시트를 자동 조회하는 중입니다.</p>
-</div>
-</div>
-<div class="form-section">
-<div class="section-heading">
-<span class="step">
-        02
-       </span>
-<div>
-<h3>
-         영수증 정보
-        </h3>
-<p>
-         승인번호 앞자리 0을 유지합니다.
-        </p>
-</div>
-</div>
-<div class="section-content">
-<div class="two">
-<label class="field">
-         승인번호
-         <input id="approval" inputmode="numeric" placeholder="예: 01234567" type="text"/>
-</label>
-<label class="field">
-         금액 (원)
-         <input id="amount" min="0" placeholder="75000" step="1" type="number"/>
-</label>
-</div>
-<div class="two">
-<label class="field">
-         구분
-         <select id="category"><option value="">구분 선택</option><option value="기내지원비">기내지원비</option><option value="케이터링">케이터링</option><option value="교통비">교통비</option><option value="숙박비">숙박비</option><option value="기타">기타</option></select>
-</label>
-<label class="field">
-         기종
-         <select id="aircraft"><option value="">기종 선택</option><option value="A319">A319</option><option value="G650">G650</option></select>
-</label>
-</div>
-<div class="two">
-<label class="field">
-         트립시작일
-         <input id="tripDate" type="date"/>
-</label>
-<label class="field">
-         세부내역
-         <input id="details" placeholder="케이터링_" value="케이터링_" type="text"/>
-</label>
-</div>
-</div>
-</div>
-<div class="form-section">
-<div class="section-heading">
-<span class="step">
-        03
-       </span>
-<div>
-<h3>
-         사진 첨부
-        </h3>
-<p>
-         카메라 촬영 또는 앨범에서 여러 장을 선택할 수 있습니다.
-        </p>
-</div>
-</div>
-<div class="section-content">
-<h3>
-        영수증 사진
-       </h3>
-<div class="uploader" id="uploadArea" role="button" tabindex="0" aria-label="영수증 사진 불러오기">
-<div class="blank" id="emptyImg">
-         사진을 촬영하거나 불러오세요.
+ </head>
+ <body>
+  <div id="receiptAuthScreen" style="min-height:100vh;display:flex;align-items:center;justify-content:center;background:#f2f5fa;padding:20px;font-family:Arial,sans-serif">
+   <div style="width:min(100%,420px);border:1px solid #dbe3ef;background:white;border-radius:18px;padding:26px;text-align:center;box-shadow:0 10px 30px #14233812">
+    <h2 style="margin:0 0 12px">
+     CABIN RECEIPT
+    </h2>
+    <p id="receiptAuthStatus" style="color:#52647b;font-size:14px;line-height:1.6">
+     Google 계정을 확인하는 중입니다.
+    </p>
+    <div id="receiptGoogleButton" style="display:flex;justify-content:center;margin-top:16px">
+    </div>
+   </div>
+  </div>
+  <div id="receiptProtectedRoot" style="display:none">
+   <header>
+    <div class="brand">
+     <span class="brand-icon">
+      ▧
+     </span>
+     <span>
+      <strong>
+       CABIN RECEIPT
+      </strong>
+      <small>
+       영수증 양식 관리
+      </small>
+     </span>
+    </div>
+    <div id="receiptAccountBar" style="display:none;align-items:center;gap:9px;margin-left:auto;flex-wrap:wrap">
+     <span id="receiptAccountEmail" style="font-size:12px;color:#f1f5f9;word-break:break-all">
+     </span>
+     <button id="receiptSwitchAccount" style="border:1px solid #f4b8a8;background:#fff7ed;color:#9a3412;border-radius:12px;padding:9px 13px;cursor:pointer;font-weight:750;font-size:13px" type="button">
+      계정 변경
+     </button>
+    </div>
+   </header>
+   <main class="shell">
+    <nav aria-label="화면 전환" class="app-tabs">
+     <button class="tab-btn active" id="tabCreate" type="button">
+      영수증 작성
+     </button>
+     <button class="tab-btn" id="tabRecords" type="button">
+      저장된 영수증 목록
+     </button>
+    </nav>
+    <div class="top-toolbar">
+     <button class="btn toolbar-new" id="topNew" type="button">
+      <span aria-hidden="true">
+       ＋
+      </span>
+      NEW
+     </button>
+    </div>
+    <div class="layout">
+     <section class="panel editor">
+      <div class="form-section">
+       <div class="section-heading">
+        <span class="step">
+         01
+        </span>
+        <div>
+         <h3>
+          구성원 선택
+         </h3>
+         <p>
+          CABIN_RECEIPT 스프레드시트의 구성원정보를 사용합니다.
+         </p>
         </div>
-<img alt="영수증 사진 미리보기" hidden="" id="inputImg"/>
-</div>
-<p class="hint">
-        승인번호 1건에 사진 여러 장을 추가할 수 있습니다. 여러 장은 Drive 폴더 링크 하나로 관리됩니다.
-       </p>
-<div class="hint" id="photoCount">
-        첨부 0장
        </div>
-<div class="photo-strip" id="photoStrip">
-</div>
-<div class="actions">
-<button class="btn primary" id="cameraBtn" type="button">
-         카메라 촬영
-        </button>
-<button class="btn" id="albumBtn" type="button">
-         사진 불러오기
-        </button>
-<button class="btn red" id="removePhoto" type="button">
-         선택 사진 삭제
-        </button>
-</div>
-<input accept="image/*" capture="environment" hidden="" id="cameraFile" type="file"/>
-<input accept="image/*" hidden="" id="albumFile" multiple="" type="file"/>
-</div>
-</div>
-
-</section>
-<section class="panel preview">
-
-<div class="preview-top">
-<h2>완성 양식 미리보기</h2>
-<div class="preview-save"><button class="btn green toolbar-save" id="topSave" type="button">저장</button><span id="topSaveStatus" role="status" aria-live="polite" hidden>✓ 파일 저장 완료</span></div>
-<button class="btn green" id="pngBtn" type="button">
-       양식 PNG 다운로드
-      </button>
-<button class="btn primary" id="printBtn" style="display:none" type="button">
-       인쇄 / PDF 저장
-      </button>
-</div>
-<div class="paperwrap">
-<div class="paper">
-<div class="receipt-grid">
-<div class="receipt-photo">
-<span class="ph" id="printPlaceholder">
-          영수증 사진
-         </span>
-<img alt="첨부 영수증" hidden="" id="printImg"/>
-</div>
-<div class="receipt-info">
-<div class="line">
-<div class="k">
-           이름
-          </div>
-<div class="v" id="vname">
-           —
-          </div>
-</div>
-<div class="line">
-<div class="k">
-           승인번호
-          </div>
-<div class="v" id="vapproval">
-           —
-          </div>
-</div>
-<div class="line">
-<div class="k">
-           금액 (원)
-          </div>
-<div class="v" id="vamount">
-           —
-          </div>
-</div>
-<div class="noteblock">
-<div class="note-rows">
-<div class="note-row">
-<div class="k">
-             구분
-            </div>
-<div class="v" id="vcategory">
-             —
-            </div>
-</div>
-<div class="note-row">
-<div class="k">
-             기종
-            </div>
-<div class="v" id="vaircraft">
-             —
-            </div>
-</div>
-<div class="note-row">
-<div class="k">
-             트립시작일
-            </div>
-<div class="v" id="vtripDate">
-             —
-            </div>
-</div>
-<div class="note-row">
-<div class="k">
-             세부내역
-            </div>
-<div class="v" id="vdetails">
-             —
-            </div>
-</div>
-</div>
-</div>
-</div>
-</div>
-</div>
-</div>
-<p class="hint">영수증 사진과 입력 정보가 결합된 완성 양식입니다. 이미지를 확인한 뒤 상단 저장 버튼을 누르세요.</p>
-</section>
-</div>
-<section class="panel list-page" hidden="" id="recordsPage"><div class="list-head"><div><h2>저장된 영수증 목록</h2><p class="small">최신 업로드 순 · 체크한 영수증을 ZIP으로 다운로드</p></div><button class="btn" id="jumpRefresh" type="button">↻ 목록 새로고침</button></div><div class="records-summary" id="recordsSummary">목록 조회 대기 중</div><div class="record-actions"><button class="btn" id="selectAllCloud" type="button">전체 선택</button><button class="btn" id="clearCloudChecks" type="button">선택 해제</button><button class="btn green" id="downloadSelectedZip" type="button">선택 ZIP 다운로드</button><button class="btn" id="deleteSelectedReceipts" type="button" style="background:#fff0f0;color:#b91c1c;border:1px solid #fecaca">선택 삭제</button></div><div class="records-sort-actions" aria-label="영수증 목록 정렬"><span class="sort-caption">정렬</span><button class="btn active-sort" type="button" data-record-sort="updated">최신순</button><button class="btn" type="button" data-record-sort="name">이름순 ↑</button><button class="btn" type="button" data-record-sort="submitter">제출자순 ↑</button><button class="btn" type="button" data-record-sort="aircraft">기종순 ↑</button></div><div aria-live="polite" id="zipResult"></div><div class="records-table-wrap"><div class="record-grid" id="cloudRecordsGrid"><p class="hint">목록 새로고침 버튼을 누르면 저장본이 나타납니다.</p></div></div></section><div aria-hidden="true" class="form-section storage-section" style="display:none !important">
-<div class="section-heading">
-<span class="step">
-        04
-       </span>
-<div>
-<h3>
-         저장 및 관리
-        </h3>
-<p>
-         기기 저장 또는 Drive 클라우드 저장을 선택하세요.
+       <div class="section-content">
+        <label class="field" style="max-width:480px">
+         이름
+         <select disabled="" id="name">
+          <option value="">
+           구성원 정보를 불러오는 중...
+          </option>
+         </select>
+        </label>
+        <input id="dept" type="hidden" value=""/>
+        <p class="hint" id="staffStatus">
+         구성원정보 시트를 자동 조회하는 중입니다.
         </p>
-</div>
-</div>
-<div class="section-content">
-<div class="actions"><button class="btn green" id="cloudSave" type="button">Google Drive 저장</button><button class="btn" id="pngBtnSimple" type="button">PNG 다운로드</button><button class="btn" id="newBtn" type="button">새 양식</button></div>
-<details class="syncbox" style="margin-top:14px"><summary style="cursor:pointer;font-weight:700">서버 연결 설정 / 구성원 새로고침</summary>
-<input id="backendUrl" readonly="" style="display:none" type="url" value="https://script.google.com/macros/s/AKfycbxrPy3v5wpemZXx-kyqlA6Dr3L0hybiyTHKFqtRxs3fizPS_Uor1Cno6fiegrQ2OOYHXA/exec"/>
-<div class="actions"><button class="btn" id="connectCloud" type="button">연결 재확인</button><button class="btn" id="reloadStaff" type="button">구성원 새로고침</button></div>
-</details>
-<p class="hint" id="folderLink" style="display:none"></p>
-<div class="syncstatus" id="syncStatus">Google Sheets 연결 확인 중...</div>
-<div style="margin-top:24px;display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap"><h3 style="margin:0">저장된 영수증 목록</h3></div>
-<p class="hint">저장 시각(KST) · 승인번호 · 이름 · 금액 · 첨부 수로 구분됩니다. 선택 후 한 번에 ZIP 다운로드할 수 있습니다.</p>
-<div class="actions" style="margin:12px 0"></div>
-
-
-<div style="display:none">
-<select id="savedList"></select><button id="saveBtn"></button><button id="deleteBtn"></button>
-<select id="cloudList"></select><button id="cloudLoad"></button><button id="cloudDelete"></button>
-<button id="staffQuickProxy"></button>
-</div>
-</div>
-</div></main>
-<div class="camera-overlay" id="cameraOverlay">
-<div class="camera-body">
-<video autoplay="" id="video" muted="" playsinline="">
-</video>
-<div class="camera-controls">
-<button class="btn" id="closeCamera" type="button">
-      취소
-     </button>
-<button class="btn primary" id="takePhoto" type="button">
-      촬영
-     </button>
-</div>
-</div>
-</div>
-<div id="toast">
-</div>
-</div>
-<script src="https://accounts.google.com/gsi/client" async defer></script>
-<script>
-// Shared ApprovedUsers / Google Identity Services authorization.
-// The backend verifies the Google credential separately on every request.
-const RECEIPT_GOOGLE_CLIENT_ID='434108168386-jn8hp4mflhn68n98n6m9r1nm6iv7b3qe.apps.googleusercontent.com';
-let receiptIdToken='';
-let receiptSessionToken='';
-let receiptCurrentUser=null;
-let receiptAuthenticated=false;
-let receiptAuthInProgress=false;
-const RECEIPT_SESSION_KEY='cabinReceiptSignedSessionV1';
-function receiptShowAuthStatus(message){document.getElementById('receiptAuthStatus').textContent=message;}
-// Switching accounts explicitly revokes the old server session before starting a new login.
-async function receiptSwitchAccount(){
- const btn=document.getElementById('receiptSwitchAccount');if(btn)btn.disabled=true;
- try{if(receiptSessionToken)await cloudRequest('logout');}
- catch(e){alert('기존 서버 세션을 폐기하지 못했습니다. 네트워크를 확인하고 다시 시도해 주세요. ('+e.message+')');if(btn)btn.disabled=false;return;}
- try{window.google?.accounts?.id?.disableAutoSelect();window.google?.accounts?.id?.cancel();}catch(_){ }
- receiptSignOut();if(btn)btn.disabled=false;
-}
-function receiptSignOut(){
- receiptIdToken='';receiptSessionToken='';receiptCurrentUser=null;receiptAuthenticated=false;
- document.getElementById('receiptAccountBar').style.display='none';
- try{localStorage.removeItem(RECEIPT_SESSION_KEY);}catch(_){ }
- document.getElementById('receiptProtectedRoot').style.display='none';
- document.getElementById('receiptAuthScreen').style.display='flex';
- receiptShowAuthStatus('다른 Google 계정을 선택해 로그인해 주세요.');
- if(window.google?.accounts?.id)google.accounts.id.initialize({client_id:RECEIPT_GOOGLE_CLIENT_ID,callback:receiptHandleGoogleCredential,auto_select:false,cancel_on_tap_outside:false});
- receiptRenderGoogleButton();
-}
-async function receiptFinishAuth(user){
- receiptCurrentUser={email:user.email,name:user.name,role:user.role,isFullAccess:user.isFullAccess===true};
- receiptAuthenticated=true;
- document.getElementById('receiptAccountEmail').textContent='로그인: '+receiptCurrentUser.email;
- document.getElementById('receiptAccountBar').style.display='flex';
- document.getElementById('receiptProtectedRoot').style.display='block';
- document.getElementById('receiptAuthScreen').style.display='none';
- if(typeof connectAndLoadStaff==='function')await connectAndLoadStaff();
-}
-async function receiptHandleGoogleCredential(response){
- if(receiptAuthInProgress)return;
- receiptAuthInProgress=true;
- receiptShowAuthStatus('승인된 계정인지 확인하고 있습니다...');
- try{
-  if(!response||!response.credential)throw Error('Google 로그인 정보가 없습니다.');
-  receiptIdToken=response.credential;
-  const user=await cloudRequest('auth'); // Login checked by portal's ApprovedUsers
-  if(!user.sessionToken||!user.expiresAt)throw Error('새 백엔드 배포가 필요합니다.');
-  receiptSessionToken=user.sessionToken;
-  try{localStorage.setItem(RECEIPT_SESSION_KEY,JSON.stringify({token:user.sessionToken,expiresAt:user.expiresAt}));}catch(_){ }
-  receiptIdToken=''; // Never retain Google ID token after exchange.
-  await receiptFinishAuth(user);
- }catch(err){
-  receiptAuthenticated=false;receiptIdToken='';receiptSessionToken='';
-  receiptShowAuthStatus('접근 실패: '+err.message);receiptRenderGoogleButton();
- }finally{receiptAuthInProgress=false;}
-}
-function receiptRenderGoogleButton(){
- const el=document.getElementById('receiptGoogleButton');
- if(!window.google?.accounts?.id){setTimeout(receiptRenderGoogleButton,350);return;}
- el.replaceChildren();
- google.accounts.id.renderButton(el,{theme:'outline',size:'large',width:270,text:'continue_with',shape:'pill'});
-}
-async function receiptStartAuth(){
- receiptShowAuthStatus('기존 로그인 세션을 확인하고 있습니다...');
- let saved=null;
- try{saved=JSON.parse(localStorage.getItem(RECEIPT_SESSION_KEY)||'null');}catch(_){ }
- if(saved?.token&&Number(saved.expiresAt)>Date.now()){
-  receiptSessionToken=saved.token;
-  try{
-   const user=await cloudRequest('session'); // Server validates HMAC and 24-hour expiry.
-   await receiptFinishAuth(user);
-   return;
-  }catch(_){receiptSessionToken='';try{localStorage.removeItem(RECEIPT_SESSION_KEY);}catch(__){} }
- }
- if(!window.google?.accounts?.id){setTimeout(receiptStartAuth,300);return;}
- google.accounts.id.initialize({client_id:RECEIPT_GOOGLE_CLIENT_ID,callback:receiptHandleGoogleCredential,auto_select:true,cancel_on_tap_outside:false});
- receiptShowAuthStatus('Google 계정으로 로그인해 주세요.');
- receiptRenderGoogleButton();
- google.accounts.id.prompt();
-}
-document.getElementById('receiptSwitchAccount').addEventListener('click',receiptSwitchAccount);
-window.addEventListener('load',receiptStartAuth);
-   'use strict';
-let EMPLOYEES=[]; // Google Sheets '구성원정보'에서만 불러옵니다.
-const fields=['approval','amount','category','aircraft','tripDate','details'];const $=id=>document.getElementById(id);const KEY='receiptTemplateSavedV1';let photo='',photos=[],selectedPhoto=0,folderUrl='',currentId='',stream=null,dbPromise=null;let cloudBusy=false,cloudVersion='',pendingSaveToken='',pendingSaveSignature='',lastCompletedSaveSignature='';const CLOUD_URL_KEY='receiptFlowCloudUrlV1';
-function notice(t){$('toast').textContent=t;$('toast').style.display='block';clearTimeout(notice.timer);notice.timer=setTimeout(()=>$('toast').style.display='none',2600)}
-function staffInit(){
- const previousName=$('name').value;
- $('name').disabled=!EMPLOYEES.length;
- fillNames(previousName);
- $('staffStatus').textContent=EMPLOYEES.length
-  ? '구성원 '+EMPLOYEES.length+'명 · CABIN_RECEIPT / 구성원정보 자동 연동'
-  : '구성원정보를 자동으로 불러오는 중입니다. 연결에 실패하면 아래 상태 메시지를 확인하세요.';
-}
-function esc(x){return String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
-function fillNames(selection=''){
- const names=new Map();
- EMPLOYEES.forEach(e=>names.set(e.name,(names.get(e.name)||0)+1));
- $('name').innerHTML='<option value="">이름 선택</option>'+EMPLOYEES.map(e=>`<option value="${esc(e.id+'|'+e.name)}">${esc(e.name)}${names.get(e.name)>1?' ('+esc(e.dept)+')':''}</option>`).join('');
- const match=EMPLOYEES.find(e=>e.name===selection||e.id+'|'+e.name===selection);
- $('name').value=match?match.id+'|'+match.name:'';
- syncSelectedStaff();render();
-}
-function selectedStaff(){return EMPLOYEES.find(e=>e.id+'|'+e.name===$('name').value)||null}
-function syncSelectedStaff(){const e=selectedStaff();$('dept').value=e?e.dept:''}
-function selectedName(){const e=selectedStaff();return e?e.name:''}
-function tripDisplay(v){if(!v)return '—';const [y,m,d]=v.split('-');return `${d}${['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'][Number(m)-1]||m}, ${y}`}
-function syncPhotos(){photo=photos[selectedPhoto]||'';render();}
-function drawPhotoStrip(){
- $('photoCount').textContent='첨부 '+photos.length+'장 · 선택 '+(photos.length?selectedPhoto+1:0)+'번';
- const host=$('photoStrip');host.innerHTML='';
- photos.forEach((p,i)=>{const b=document.createElement('button');b.type='button';b.className='photo-chip'+(i===selectedPhoto?' selected':'');const img=document.createElement('img');img.src=p;img.alt=(i+1)+'번 영수증';const lbl=document.createElement('small');lbl.textContent=(i+1)+' / '+photos.length;b.append(img,lbl);b.addEventListener('click',()=>{selectedPhoto=i;syncPhotos()});host.append(b)});
- const link=$('folderLink');link.style.display=folderUrl?'block':'none';link.innerHTML='';if(folderUrl){const a=document.createElement('a');a.href=folderUrl;a.target='_blank';a.rel='noopener noreferrer';a.textContent='Drive 영수증 묶음 폴더 열기 (하나의 링크)';link.append(a)}
-}
-function render(){if(lastCompletedSaveSignature && !$('topSaveStatus').hidden && currentId){try{if(receiptSaveSignature(record())!==lastCompletedSaveSignature)receiptSetSaveComplete(false)}catch(e){receiptSetSaveComplete(false)}}const v=id=>$(id).value.trim()||'—';$('vname').textContent=selectedName()||'—';$('vapproval').textContent=v('approval');$('vamount').textContent=$('amount').value?Number($('amount').value).toLocaleString('ko-KR'):'—';$('vcategory').textContent=v('category');$('vaircraft').textContent=v('aircraft');$('vtripDate').textContent=tripDisplay($('tripDate').value);$('vdetails').textContent=v('details');for(const [id,placeholder] of [['inputImg','emptyImg'],['printImg','printPlaceholder']]){$(id).hidden=!photo;$(placeholder).hidden=!!photo;if(photo && $(id).src!==photo)$(id).src=photo;if(!photo)$(id).removeAttribute('src')}drawPhotoStrip()}
-// VBA 파일명: 승인번호(승인번호)_정수금액원_MM.DD_이름.png (앞자리 0 유지)
-function safeFilename(s){return String(s).replace(/[\\/:*?"<>|]/g,'-').trim()}
-function fileBaseName(){
- const approval=$('approval').value.trim()||'N-A';
- const rawAmount=Number($('amount').value||0);
- const amount=Number.isFinite(rawAmount)?String(Math.round(rawAmount)):'0';
- const date=$('tripDate').value;
- const md=date?/^\d{4}-(\d{2})-(\d{2})$/.test(date)?date.slice(5,7)+'.'+date.slice(8,10):date:'미입력';
- return safeFilename(approval+'(승인번호)_'+amount+'원_'+md+'_'+(selectedName()||'이름없음'));
-}
-function finalImageFilename(i,total){return fileBaseName()+(total>1?'_'+String(i+1).padStart(2,'0'):'')+'.png'}
-let receiptImageDecodeCache=null;
-function decodeImage(src){
- if(receiptImageDecodeCache&&receiptImageDecodeCache.has(src))return receiptImageDecodeCache.get(src);
- const task=new Promise((resolve,reject)=>{const im=new Image();im.onload=()=>resolve(im);im.onerror=()=>reject(Error('이미지를 처리할 수 없습니다.'));im.src=src});
- if(receiptImageDecodeCache)receiptImageDecodeCache.set(src,task);
- return task;
-}
-// Off-main-thread-friendly encoder when supported; no change in image dimensions or PNG losslessness.
-function receiptCanvasDataURL(canvas,mime='image/png',quality){
- if(!canvas.toBlob)return Promise.resolve(canvas.toDataURL(mime,quality));
- return new Promise((resolve,reject)=>canvas.toBlob(blob=>{
-  if(!blob){reject(Error('이미지 인코딩에 실패했습니다.'));return;}
-  const reader=new FileReader();reader.onload=()=>resolve(reader.result);reader.onerror=()=>reject(Error('이미지 읽기에 실패했습니다.'));reader.readAsDataURL(blob);
- },mime,quality));
-}
-function wrapCanvasText(ctx,value,x,y,maxWidth,lineH,maxLines=3){
- const chars=Array.from(String(value||'—'));let line='',lines=0;
- for(const ch of chars){if(ctx.measureText(line+ch).width>maxWidth&&line){ctx.fillText(line,x,y+lines*lineH);lines++;line='';if(lines>=maxLines)return;}line+=ch;}
- if(line)ctx.fillText(line,x,y+lines*lineH);
-}
-async function createReceiptPng(src,targetCtx=null,offsetY=0){
- const im=await decodeImage(src);
- const c=targetCtx?null:document.createElement('canvas');
- if(c){c.width=1600;c.height=1700;}
- const g=targetCtx||c.getContext('2d');
- g.save();
- if(targetCtx)g.translate(0,offsetY);
- const left=24,top=24,right=1576,bottom=1676,divide=1033;
- const infoWidth=right-divide,upperLabelEnd=divide+infoWidth*.35;
- const noteSecondEnd=upperLabelEnd;
- const topRowHeight=116,noteTop=top+3*topRowHeight;
- const noteRowHeight=(bottom-noteTop)/4;
- g.fillStyle='#fff';g.fillRect(0,0,1600,1700);
- const ratio=Math.min((divide-left-32)/im.width,(bottom-top-32)/im.height);
- const w=im.width*ratio,h=im.height*ratio;
- g.drawImage(im,(left+divide-w)/2,(top+bottom-h)/2,w,h);
- g.strokeStyle='#202b39';g.lineWidth=2;
- function line(x1,y1,x2,y2){g.beginPath();g.moveTo(x1,y1);g.lineTo(x2,y2);g.stroke();}
- // 정보 테이블은 모두 한 줄로 표시하고, 셀 너비에 따라 글씨를 자동 축소합니다.
- function fitCellText(text,maxWidth,baseFont,minFont,weight='bold'){
-   text=String(text==null||text===''?'—':text);
-   let size=baseFont;
-   while(size>minFont){g.font=weight+' '+size+'px sans-serif';if(g.measureText(text).width<=maxWidth)break;size--;}
-   g.font=weight+' '+size+'px sans-serif';
-   if(g.measureText(text).width>maxWidth){
-     while(text.length>1&&g.measureText(text+'…').width>maxWidth)text=text.slice(0,-1);
-     text+='…';
-   }
-   return text;
- }
- function label(text,x0,y0,x1,y1,fontsize=23){
-   g.fillStyle='#f0f2f5';g.fillRect(x0+1,y0+1,x1-x0-2,y1-y0-2);
-   g.fillStyle='#263b55';g.textAlign='center';g.textBaseline='middle';
-   const fitted=fitCellText(text,x1-x0-12,fontsize,12);
-   g.fillText(fitted,(x0+x1)/2,(y0+y1)/2);
-   g.textAlign='left';g.textBaseline='alphabetic';
- }
- function value(text,x0,y0,x1,y1,fontsize=25){
-   g.fillStyle='#18293b';g.textAlign='left';g.textBaseline='middle';
-   const fitted=fitCellText(text,x1-x0-24,fontsize,12);
-   g.fillText(fitted,x0+12,(y0+y1)/2);
-   g.textBaseline='alphabetic';
- }
- const person=selectedName()||'이름없음';
- const main=[['이름',person],['승인번호',$('approval').value||'—'],['금액 (원)',Number($('amount').value||0).toLocaleString('ko-KR')]];
- main.forEach(([title,v],i)=>{let y0=top+i*topRowHeight,y1=y0+topRowHeight;
-   label(title,divide,y0,upperLabelEnd,y1);value(v,upperLabelEnd,y0,right,y1);
-   if(i<2)line(divide,y1,right,y1);
- });
- const notes=[['구분',$('category').value],['기종',$('aircraft').value],['트립시작일',tripDisplay($('tripDate').value)],['세부내역',$('details').value]];
- notes.forEach(([title,v],i)=>{const y0=noteTop+i*noteRowHeight,y1=y0+noteRowHeight;
-   label(title,divide,y0,noteSecondEnd,y1,23);
-   value(v,noteSecondEnd,y0,right,y1,26);
-   if(i<3)line(divide,y1,right,y1);
- });
- line(divide,top,divide,bottom);
- line(upperLabelEnd,top,upperLabelEnd,bottom);
- line(divide,noteTop,right,noteTop);
- g.strokeRect(left,top,right-left,bottom-top);
- g.restore();
- return c?c.toDataURL('image/png'):null;
-}
-async function downloadReceiptPng(){
- if(!photos.length){notice('영수증 사진을 추가하세요.');return;}
- if(!confirm('트립시작일 '+tripDisplay($('tripDate').value)+'이 맞습니까?'))return;
- const url=await createCombinedReceiptPng();
- const a=document.createElement('a');a.download=combinedReceiptFilename();a.href=url;
- document.body.append(a);a.click();a.remove();
- notice('완성 PNG 1개 다운로드 · 첫 사진+정보, 나머지 '+Math.max(0,photos.length-1)+'장');
-}
-
-// 첫 구역: 사진 1장 + 영수증 정보 테이블.
-// 두 번째 구역부터: 테이블 없이 첨부 사진만 최대 크기로 표시.
-async function drawAdditionalPhoto(src, ctx, offsetY){
- const im=await decodeImage(src);
- const padding=24, availableW=1600-padding*2, availableH=940-padding*2;
- const scale=Math.min(availableW/im.width,availableH/im.height);
- const w=im.width*scale,h=im.height*scale;
- ctx.save();
- ctx.fillStyle='#ffffff';ctx.fillRect(0,offsetY,1600,940);
- ctx.drawImage(im,(1600-w)/2,offsetY+(940-h)/2,w,h);
- ctx.restore();
-}
-// 첫 구역만 테이블을 포함하고 이후는 사진만 세로로 연결하는 PNG 1개.
-// Keep below the server's 24,500,000-character total Base64 limit, with form overhead margin.
-const RECEIPT_MAX_TOTAL_BASE64=23000000;
-const RECEIPT_MAX_PHOTO_BASE64=2200000; // server per-photo cap: 2,400,000
-function receiptDataSize(data){return String(data||'').length;}
-async function createCombinedReceiptPng(photoData=photos){
- if(!photoData.length || photoData.length>8)throw Error('사진은 1~8장을 첨부해야 합니다.');
- const available=RECEIPT_MAX_TOTAL_BASE64-photoData.reduce((n,p)=>n+receiptDataSize(p),0);
- if(available<250000)throw Error('사진 용량이 너무 큽니다. 사진 해상도를 줄인 후 다시 시도하세요.');
- const fullHeight=1700+940*(photoData.length-1);
- receiptImageDecodeCache=new Map();
- const preload=photoData.map(src=>decodeImage(src));
- try{await Promise.all(preload);}catch(e){receiptImageDecodeCache=null;throw e;}
- // Render photos and table only once. Size fallback resamples pixels instead of decoding/redrawing each image.
- const master=document.createElement('canvas');
- master.width=1600;master.height=fullHeight;
- const mainCtx=master.getContext('2d',{alpha:false});
- if(!mainCtx)throw Error('이미지 캔버스를 생성하지 못했습니다.');
- mainCtx.fillStyle='#ffffff';mainCtx.fillRect(0,0,1600,fullHeight);
- try{
-  await createReceiptPng(photoData[0],mainCtx,0);
-  for(let i=1;i<photoData.length;i++)await drawAdditionalPhoto(photoData[i],mainCtx,1700+(i-1)*940);
-  // Most receipts fit at native 1600px: only one PNG encode in the common case.
-  let result=await receiptCanvasDataURL(master,'image/png');
-  if(result.length<=available)return result;
-  // Rare oversized receipts: reuse rendered image, never rebuild text/photo layers.
-  const reduced=document.createElement('canvas');
-  const scales=[.9,.8,.7,.6,.5,.4,.3];
-  for(const scale of scales){
-   reduced.width=Math.max(1,Math.round(master.width*scale));
-   reduced.height=Math.max(1,Math.round(master.height*scale));
-   const ctx=reduced.getContext('2d',{alpha:false});
-   if(!ctx)break;
-   ctx.fillStyle='#ffffff';ctx.fillRect(0,0,reduced.width,reduced.height);
-   ctx.drawImage(master,0,0,reduced.width,reduced.height);
-   result=await receiptCanvasDataURL(reduced,'image/png');
-   if(result.length<=available){reduced.width=1;reduced.height=1;return result;}
-  }
-  reduced.width=1;reduced.height=1;
-  throw Error('PNG 파일이 서버 전송 용량을 초과했습니다. 사진 수를 줄여 저장하세요.');
- }finally{master.width=1;master.height=1;receiptImageDecodeCache=null;}
-}
-function combinedReceiptFilename(){return fileBaseName()+'.png'}
-// Prefer higher resolution; adapt quality and pixel size to remain under GAS per-photo limit.
-function receiptEncodeJpeg(canvas,maxChars=RECEIPT_MAX_PHOTO_BASE64){
- for(const quality of [.9,.85,.8,.75,.7]){
-  const encoded=canvas.toDataURL('image/jpeg',quality);
-  if(encoded.length<=maxChars)return encoded;
- }
- const tmp=document.createElement('canvas');
- for(const factor of [.9,.8,.7,.6,.5,.4]){
-  tmp.width=Math.max(1,Math.round(canvas.width*factor));
-  tmp.height=Math.max(1,Math.round(canvas.height*factor));
-  tmp.getContext('2d',{alpha:false}).drawImage(canvas,0,0,tmp.width,tmp.height);
-  for(const q of [.85,.75,.65]){
-   const encoded=tmp.toDataURL('image/jpeg',q);
-   if(encoded.length<=maxChars)return encoded;
-  }
- }
- throw Error('사진을 서버 용량에 맞게 변환하지 못했습니다.');
-}
-function resizePhoto(file){return new Promise((resolve,reject)=>{
- if(!file.type.startsWith('image/'))return reject(Error('이미지 파일만 선택할 수 있습니다.'));
- const img=new Image(),url=URL.createObjectURL(file);
- img.onload=()=>{try{
-  const s=Math.min(1,1600/Math.max(img.naturalWidth,img.naturalHeight));
-  const c=document.createElement('canvas');
-  c.width=Math.max(1,Math.round(img.naturalWidth*s));c.height=Math.max(1,Math.round(img.naturalHeight*s));
-  c.getContext('2d',{alpha:false}).drawImage(img,0,0,c.width,c.height);
-  const encoded=receiptEncodeJpeg(c);c.width=1;c.height=1;URL.revokeObjectURL(url);resolve(encoded);
- }catch(e){URL.revokeObjectURL(url);reject(e)}};
- img.onerror=()=>{URL.revokeObjectURL(url);reject(Error('사진을 읽지 못했습니다.'))};img.src=url;
-})}
-let receiptPhotosProcessing=false;
-async function readPhotos(files){
- if(receiptPhotosProcessing){notice('사진 처리 중입니다.');return;}
- if(photos.length+files.length>8){notice('한 건당 사진은 최대 8장입니다.');return;}
- if(!files.length)return;
- receiptPhotosProcessing=true;
- try{
-  // Decode/compress at most 3 photos concurrently: good throughput without 8 large canvases at once.
-  const converted=new Array(files.length);let next=0;
-  async function worker(){while(next<files.length){const index=next++;converted[index]=await resizePhoto(files[index]);}}
-  await Promise.all(Array.from({length:Math.min(3,files.length)},()=>worker()));
-  photos.push(...converted);selectedPhoto=photos.length-1;syncPhotos();notice('첨부 '+photos.length+'장');
- }catch(e){notice(e.message)}finally{receiptPhotosProcessing=false;}
-}
-function readPhoto(file){return readPhotos(file?[file]:[])}
-async function startCamera(){try{if(!navigator.mediaDevices?.getUserMedia)throw Error('브라우저 카메라를 사용할 수 없습니다.');stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'},width:{ideal:1920}},audio:false});$('video').srcObject=stream;$('cameraOverlay').classList.add('open')}catch(e){stopCamera();$('cameraFile').click();notice('기본 카메라 앱으로 전환합니다.')}}
-function stopCamera(){if(stream){stream.getTracks().forEach(t=>t.stop());stream=null}$('video').srcObject=null;$('cameraOverlay').classList.remove('open')}
-function takePhoto(){const v=$('video');if(!v.videoWidth){notice('카메라 준비 중입니다.');return}if(photos.length>=8){stopCamera();notice('최대 8장입니다.');return}const can=document.createElement('canvas'),s=Math.min(1,1600/Math.max(v.videoWidth,v.videoHeight));can.width=Math.round(v.videoWidth*s);can.height=Math.round(v.videoHeight*s);can.getContext('2d').drawImage(v,0,0,can.width,can.height);photos.push(receiptEncodeJpeg(can));selectedPhoto=photos.length-1;stopCamera();syncPhotos()}
-function saved(){try{return JSON.parse(localStorage.getItem(KEY)||'[]')}catch{return []}}function setSaved(x){localStorage.setItem(KEY,JSON.stringify(x))}
-function record(){return{id:currentId||('r'+Date.now().toString(36)+Math.random().toString(36).slice(2)),dept:$('dept').value,name:selectedName(),...Object.fromEntries(fields.map(id=>[id,$(id).value])),folderUrl,baseVersion:cloudVersion,updated:new Date().toISOString()}}
-function refreshSaved(){const rows=saved().sort((a,b)=>b.updated.localeCompare(a.updated));$('savedList').innerHTML='<option value="">새 양식 / 저장본 선택</option>'+rows.map(r=>`<option value="${esc(r.id)}">${esc(r.name||'미지정')} · ${esc(r.approval||'승인번호 없음')} · ${esc((r.updated||'').slice(0,10))}</option>`).join('');$('savedList').value=currentId}
-function openDb(){return dbPromise||(dbPromise=new Promise((res,rej)=>{const q=indexedDB.open('receiptTemplatePhotosV1',1);q.onupgradeneeded=()=>q.result.createObjectStore('photos');q.onsuccess=()=>res(q.result);q.onerror=()=>rej(q.error)}))}
-async function photoOp(id,value,mode){const db=await openDb();return new Promise((res,rej)=>{const tx=db.transaction('photos',mode==='get'?'readonly':'readwrite'),s=tx.objectStore('photos');const r=mode==='get'?s.get(id):mode==='delete'?s.delete(id):s.put(value,id);r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)})}
-async function saveRecord(){const r=record();try{await photoOp(r.id,photos,'put');const list=saved().filter(e=>e.id!==r.id);list.push(r);setSaved(list);currentId=r.id;refreshSaved();notice('양식을 저장했습니다.')}catch(e){notice('저장 실패: 저장 공간 또는 브라우저 설정을 확인하세요.')}}
-function clearForm(){receiptSetSaveComplete(false);lastCompletedSaveSignature='';const category=$('category').value;const aircraft=$('aircraft').value;const previousName=$('name').value;currentId='';cloudVersion='';pendingSaveToken='';pendingSaveSignature='';fillNames(previousName);for(const id of fields)$(id).value='';$('category').value=category;$('aircraft').value=aircraft;$('details').value='케이터링_';photos=[];selectedPhoto=0;folderUrl='';syncPhotos();refreshSaved();render()}
-async function loadRecord(id){receiptSetSaveComplete(false);lastCompletedSaveSignature='';if(!id)return clearForm();const r=saved().find(x=>x.id===id);if(!r)return;currentId=id;cloudVersion=r.baseVersion||'';pendingSaveToken='';pendingSaveSignature='';fillNames(r.name||'');for(const k of fields)$(k).value=r[k]||'';try{{const savedPhotos=await photoOp(id,null,'get');photos=Array.isArray(savedPhotos)?savedPhotos:(savedPhotos?[savedPhotos]:[]);selectedPhoto=0;folderUrl=r.folderUrl||'';syncPhotos()}}catch{photos=[];selectedPhoto=0;folderUrl='';syncPhotos()}render();refreshSaved();notice('저장된 양식을 불러왔습니다.')}
-async function deleteRecord(){if(!currentId){notice('삭제할 저장본을 선택하세요.');return}if(!confirm('선택한 저장본을 삭제하시겠습니까?'))return;try{await photoOp(currentId,null,'delete');setSaved(saved().filter(x=>x.id!==currentId));clearForm();notice('삭제했습니다.')}catch(e){notice('삭제하지 못했습니다.')}}
-// Google Apps Script HTML form bridge: avoids GitHub Pages-to-Apps Script CORS restrictions.
-function backendAddress(){const url=$('backendUrl').value.trim();if(!/^https:\/\/script\.google\.com\/macros\/s\/[\w-]+\/exec$/.test(url))throw Error('유효한 Apps Script /exec URL을 입력하세요.');return url}
-function cloudCredentials(){return {url:backendAddress()}}
-function cloudStatus(t){$('syncStatus').textContent=t}
-function cloudRequest(action,body={}){
- const {url}=cloudCredentials();const requestId='r'+Date.now().toString(36)+Math.random().toString(36).slice(2);
- return new Promise((resolve,reject)=>{
-  const iframe=document.createElement('iframe');iframe.name='bridge_'+requestId;iframe.hidden=true;
-  const form=document.createElement('form');form.method='POST';form.action=url;form.target=iframe.name;form.hidden=true;
-  const params={action,requestId,idToken:receiptIdToken,sessionToken:receiptSessionToken,...body};for(const [k,v] of Object.entries(params)){const i=document.createElement('input');i.type='hidden';i.name=k;i.value=String(v??'');form.append(i)}
-  let done=false;const finish=()=>{if(done)return;done=true;clearTimeout(timer);window.removeEventListener('message',onMessage);form.remove();iframe.remove()};
-  const timer=setTimeout(()=>{finish();reject(Error('Apps Script 응답을 받지 못했습니다(90초). /exec 주소를 시크릿 창에서 직접 열었을 때 Google 로그인이 나타나면 배포 권한 문제입니다. [배포 관리 → 새 버전, 실행 사용자: 나, 액세스: 모든 사용자]로 수정하세요.'))},90000);
-  function onMessage(e){const m=e.data;if(!m||m.app!=='receipt-template-bridge-v1'||m.requestId!==requestId)return;
-   // Apps Script HTMLService responses come from googleusercontent.com, not script.google.com.
-   // HTMLService can nest its postMessage sender in an internal iframe; e.source may differ.
-   // Trust only Google script origins, the unpredictable requestId, and the app marker.
-   if(!/^https:\/\/([a-z0-9-]+\.)*googleusercontent\.com$/i.test(e.origin)&&e.origin!=='https://script.google.com')return;
-   finish();if(m.ok)resolve(m.data);else {if(/Google 로그인|승인되지 않은|사용 권한|로그인 세션/.test(String(m.error||'')))setTimeout(receiptSignOut,0);reject(Error(m.error||'요청 실패'))}}
-  window.addEventListener('message',onMessage);document.body.append(iframe,form);form.submit();
- });
-}
-async function runCloud(label,fn){if(cloudBusy)return;cloudBusy=true;cloudStatus(label+'...');try{await fn()}catch(e){cloudStatus('오류: '+e.message);$('staffStatus').textContent='구성원 연결 실패: '+e.message;notice(e.message)}finally{cloudBusy=false}}
-// 목록은 사용자가 요청할 때만 조회합니다. 저장/삭제 후에는 화면 목록만 갱신합니다.
-let cachedCloudRecords=[];
-let cloudListLoaded=false;
-let receiptSortKey='updated';
-let receiptSortAscending=false;
-const receiptSorter=new Intl.Collator('ko-KR',{numeric:true,sensitivity:'base'});
-function applyReceiptSort(rows){
- return rows.sort((a,b)=>{
-  if(receiptSortKey==='updated'){
-   const n=String(a.updated||'').localeCompare(String(b.updated||''));
-   return receiptSortAscending?n:-n;
-  }
-  const left=String(a[receiptSortKey]||'').trim();
-  const right=String(b[receiptSortKey]||'').trim();
-  // 비어 있는 제출자(과거 기록)는 정렬 방향과 관계없이 아래에 둡니다.
-  if(!left&&right)return 1;
-  if(left&&!right)return -1;
-  const n=receiptSorter.compare(left,right);
-  return n===0?String(b.updated||'').localeCompare(String(a.updated||'')):(receiptSortAscending?n:-n);
- });
-}
-function renderReceiptSortButtons(){
- document.querySelectorAll('[data-record-sort]').forEach(btn=>{
-  const active=btn.dataset.recordSort===receiptSortKey;
-  btn.classList.toggle('active-sort',active);
-  btn.setAttribute('aria-pressed',String(active));
-  const title={updated:'최신순',name:'이름순',submitter:'제출자순',aircraft:'기종순'}[btn.dataset.recordSort];
-  btn.textContent=title+(active?(receiptSortAscending?' ↑':' ↓'):(btn.dataset.recordSort==='updated'?'':' ↑'));
- });
-}
-document.querySelectorAll('[data-record-sort]').forEach(btn=>btn.addEventListener('click',()=>{
- const key=btn.dataset.recordSort;
- receiptSortAscending=receiptSortKey===key?!receiptSortAscending:(key!=='updated');
- receiptSortKey=key;
- renderReceiptSortButtons();
- paintCloudList();
-}));
-renderReceiptSortButtons();
-function kstTime(iso){if(!iso)return '-';const d=new Date(iso);return isNaN(d.getTime())?iso:new Intl.DateTimeFormat('ko-KR',{timeZone:'Asia/Seoul',year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hour12:false}).format(d)}
-function paintCloudList(selected=''){
- const rows=applyReceiptSort([...cachedCloudRecords]);
- $('cloudList').innerHTML='<option value="">클라우드 저장본 선택</option>'+rows.map(r=>`<option value="${esc(r.id)}">${esc(r.approval||'-')}</option>`).join('');$('cloudList').value=selected;
- const checked=new Set([...document.querySelectorAll('.cloud-check:checked')].map(x=>x.value));
- $('recordsSummary').textContent=`총 ${rows.length}건 · ${ {updated:'업로드일',name:'이름',submitter:'제출자',aircraft:'기종'}[receiptSortKey] } ${receiptSortAscending?'오름차순':'내림차순'} 정렬 (KST)`;
- const header='<div class="record-head"><span>선택</span><span>업로드 (KST)</span><span>승인번호</span><span>이름</span><span>금액</span><span>구분</span><span>기종</span><span>트립시작일</span><span>세부내역</span><span>사진</span><span>파일</span><span>제출자</span></div>';
- $('cloudRecordsGrid').innerHTML=header+(rows.length?rows.map(r=>`<label class="record-row"><input class="cloud-check" type="checkbox" value="${esc(r.id)}" ${checked.has(r.id)?'checked':''}/><span class="record-cells"><span class="record-cell">${esc(kstTime(r.updated))}</span><span class="record-cell"><b>${esc(r.approval||'-')}</b></span><span class="record-cell">${esc(r.name||'-')}</span><span class="record-cell">${esc(Number(r.amount||0).toLocaleString('ko-KR'))}원</span><span class="record-cell">${esc(r.category||'-')}</span><span class="record-cell">${esc(r.aircraft||'-')}</span><span class="record-cell">${esc(r.tripDate||'-')}</span><span class="record-cell">${esc(r.details||'-')}</span><span class="record-cell">${Number(r.photoCount||1)}장</span><span class="record-cell folder">${r.folderUrl?'<a href="'+esc(r.folderUrl)+'" target="_blank" rel="noopener" onclick="event.stopPropagation()">Drive ↗</a>':'-'}</span><span class="record-cell">${esc(r.submitter||'-')}</span></span></label>`).join(''):'<div class="empty-records">저장된 영수증이 없습니다.</div>');
-}
-
-async function updateCloudList(){
- const data=await cloudRequest('list');cachedCloudRecords=data.records||[];cloudListLoaded=true;
- paintCloudList();cloudStatus('클라우드 목록 '+cachedCloudRecords.length+'건 확인 (수동 새로고침)');
-}
-function applyStaffData(data){
- const list=Array.isArray(data.employees)?data.employees:[];
- if(data.spreadsheetId&&data.spreadsheetId!=='1D9MmyRf0EBhMRAqU0gV8XdV9fsIieRa8Mjil3PIfLnk')throw Error('백엔드가 다른 스프레드시트를 읽습니다. Apps Script 코드를 새 버전으로 재배포하세요. 현재 ID: '+data.spreadsheetId);
- if(!list.length)throw Error('구성원정보가 0명입니다. Apps Script에서 testCabinReceiptEmployees() 실행 후 로그를 확인하세요.');
- EMPLOYEES=list.map(e=>({id:String(e.id||''),name:String(e.name||''),dept:String(e.dept||'')}));
- staffInit();
-}
-async function connectAndLoadStaff(){
- await runCloud('구성원정보 불러오는 중',async()=>{
-  const data=await cloudRequest('ping');applyStaffData(data);
-  try{localStorage.setItem(CLOUD_URL_KEY,backendAddress())}catch(e){}
-  cloudStatus('연결 성공 · CABIN_RECEIPT 구성원 '+EMPLOYEES.length+'명 로드 · '+(data.sheetName||'구성원정보')+' (서버 1회 호출)');
-
- });
-}
-$('connectCloud').addEventListener('click',connectAndLoadStaff);
-
-$('reloadStaff').addEventListener('click',()=>runCloud('구성원 새로고침',async()=>{const data=await cloudRequest('employees');applyStaffData(data);cloudStatus('구성원 최신 목록 '+EMPLOYEES.length+'명 로드 완료 (서버 1회 호출)')}));
-$('pngBtnSimple').addEventListener('click',()=>downloadReceiptPng().catch(e=>notice(e.message)));
-$('jumpRefresh').addEventListener('click',()=>runCloud('클라우드 목록 조회',updateCloudList));
-$('selectAllCloud').addEventListener('click',()=>document.querySelectorAll('.cloud-check').forEach(c=>c.checked=true));
-$('clearCloudChecks').addEventListener('click',()=>document.querySelectorAll('.cloud-check').forEach(c=>c.checked=false));
-$('deleteSelectedReceipts').addEventListener('click',()=>runCloud('영수증 선택 삭제',async()=>{
- const selected=[...document.querySelectorAll('.cloud-check:checked')].map(c=>c.value);
- if(!selected.length)throw Error('삭제할 영수증을 선택하세요.');
- if(selected.length>25)throw Error('한 번에 최대 25건만 삭제할 수 있습니다.');
- const email=String(receiptCurrentUser?.email||'').toLowerCase();
- const superusers=['sktsbyu@gmail.com','sbyu87@gmail.com'];
- const fullAccess=receiptCurrentUser?.isFullAccess===true || String(receiptCurrentUser?.role||'').toUpperCase()==='ADMIN';
- const forbidden=cachedCloudRecords.filter(r=>selected.includes(r.id)&&!fullAccess&&!superusers.includes(email)&&String(r.submitterEmail||'').toLowerCase()!==email);
- if(forbidden.length)throw Error('본인이 제출한 영수증만 삭제할 수 있습니다. 제출자 정보가 없는 과거 기록은 지정된 관리자만 삭제할 수 있습니다.');
- if(!confirm('선택한 영수증 '+selected.length+'건을 삭제하시겠습니까?\n\nGoogle Sheets 기록이 삭제되고, 해당 Google Drive 폴더 및 사진·완성 PNG 파일은 휴지통으로 이동합니다.\n\n확인을 누르면 삭제를 진행합니다.'))return;
- const result=await cloudRequest('deleteSelected',{ids:JSON.stringify(selected)});
- cachedCloudRecords=cachedCloudRecords.filter(r=>!selected.includes(r.id));
- paintCloudList();
- $('zipResult').textContent='영수증 '+result.count+'건 삭제 완료 · Drive 폴더 휴지통 이동';
- cloudStatus('선택한 '+result.count+'건 삭제 완료');
-}));
-$('downloadSelectedZip').addEventListener('click',()=>runCloud('ZIP 생성',async()=>{
- const ids=[...document.querySelectorAll('.cloud-check:checked')].map(c=>c.value);
- if(!ids.length)throw Error('다운로드할 영수증을 선택하세요.');
- if(ids.length>25)throw Error('한 번에 최대 25건을 선택할 수 있습니다.');
- $('zipResult').textContent='ZIP 생성 중...';
- const data=await cloudRequest('zip',{ids:JSON.stringify(ids)});
- const a=document.createElement('a');a.href=data.url;a.target='_blank';a.rel='noopener';a.textContent='ZIP 다운로드: '+data.name+' ('+data.count+'건 / '+data.files+'개 파일)';
- $('zipResult').replaceChildren(a);cloudStatus('ZIP 준비 완료 · 아래 링크를 눌러 다운로드하세요.');
-}));
-// 같은 양식/사진의 재클릭은 추가 파일을 만들지 않습니다. 수정한 내용은 다시 저장할 수 있습니다.
-function receiptSetSaveComplete(yes){$('topSaveStatus').hidden=!yes;}
-function receiptSaveSignature(r){
- const values=[r.id,r.dept,r.name,...fields.map(k=>String(r[k]||''))];
- // 원본 이미지 전부를 복사/직렬화하지 않고 변경 여부만 확인합니다.
- return JSON.stringify(values)+'|'+photos.map(p=>String(p.length)+':'+p.slice(0,96)+':'+p.slice(-96)).join('|');
-}
-$('cloudSave').addEventListener('click',()=>{
- if(cloudBusy)return; // 연타/복수 저장 요청을 시작 단계에서 차단
- runCloud('클라우드 저장',async()=>{
-  const r=record();
-  if(!r.name)throw Error('이름을 선택하세요.');
-  if(!photos.length)throw Error('영수증 사진을 첨부하세요.');
-  if(!/^\d{8}$/.test(String(r.approval||'').trim()))throw Error('승인번호는 정확히 8자리 숫자로 입력해야 합니다.');
-  if(!currentId)currentId=r.id;
-  r.id=currentId;
-  const signature=receiptSaveSignature(r);
-  if(lastCompletedSaveSignature===signature && cloudVersion){
-   receiptSetSaveComplete(true);
-   cloudStatus('이미 저장한 영수증입니다. 중복 파일을 생성하지 않았습니다.');
-   return;
-  }
-  // Fast path: PNG rendering and initial duplicate-list query proceed concurrently.
-  // Keep duplicate warning and server-side save validation unchanged.
-  receiptSetSaveComplete(false);
-  const saveButton=$('topSave'), cloudButton=$('cloudSave');
-  saveButton.disabled=true;cloudButton.disabled=true;
-  const originalLabel=saveButton.textContent;
-  saveButton.textContent='저장 중…';
-  const beganAt=performance.now();
-  const pngTask=createCombinedReceiptPng();
-  // Attach an early rejection handler so an image failure doesn't become unhandled
-  // while the separate list lookup completes.
-  const safePngTask=pngTask.then(value=>({ok:true,value}),error=>({ok:false,error}));
-  try{
-   if(!cloudListLoaded){
-    const dupList=await cloudRequest('list');
-    cachedCloudRecords=dupList.records||[];
-    cloudListLoaded=true;
-    paintCloudList();
-   }
-  const possiblyDuplicate=cachedCloudRecords.filter(x=>x.id!==r.id && String(x.approval||'').trim()===String(r.approval||'').trim());
-  if(possiblyDuplicate.length){
-   const identical=possiblyDuplicate.filter(x=>Number(x.amount||0)===Number(r.amount||0) && String(x.tripDate||'')===String(r.tripDate||''));
-   const promptText= identical.length
-     ? '같은 승인번호·금액·트립시작일의 영수증이 '+identical.length+'건 있습니다.\n\n이미 제출한 영수증인지 확인하세요.\n별도 거래가 맞다면 [확인]을 눌러 저장할 수 있습니다.'
-     : '같은 승인번호를 가진 영수증이 '+possiblyDuplicate.length+'건 있습니다.\n승인번호는 서로 다른 거래에서 재사용될 수 있습니다.\n\n별도 거래로 저장하시겠습니까?';
-   if(!confirm(promptText))throw Error("저장이 취소되었습니다.");
-  }
-   const pngResult=await safePngTask;
-   if(!pngResult.ok)throw pngResult.error;
-   const combinedPng=pngResult.value;
-   if(photos.reduce((n,p)=>n+p.length,0)+combinedPng.length>RECEIPT_MAX_TOTAL_BASE64)throw Error('이미지 전송 용량을 초과했습니다.');
-   const outputs=[combinedPng];
-   const names=[combinedReceiptFilename()];
-   // Retain the SAME token and record ID after a timeout: safe idempotent retry.
-   // Changed data must get a NEW token; the previous uncertain save is never overwritten silently.
-   if(pendingSaveSignature!==signature){pendingSaveToken='';pendingSaveSignature=signature;}
-   if(!pendingSaveToken)pendingSaveToken='save_'+Date.now().toString(36)+'_'+Math.random().toString(36).slice(2);
-   const data=await cloudRequest('save',{payload:JSON.stringify({...r,photos,outputs,names,baseVersion:cloudVersion,saveToken:pendingSaveToken})});
-   console.info('[CABIN RECEIPT] save elapsed',Math.round(performance.now()-beganAt),'ms; photos',photos.length);
-   currentId=data.id;cloudVersion=data.baseVersion||data.updated||'';
-   pendingSaveToken='';pendingSaveSignature='';folderUrl=data.folderUrl||'';
-   // 서버 저장 완료를 즉시 표시. 브라우저의 보조 로컬 보관은 뒤에서 처리합니다.
-   lastCompletedSaveSignature=signature;
-   receiptSetSaveComplete(true);
-   if(cloudListLoaded){
-    cachedCloudRecords=cachedCloudRecords.filter(x=>x.id!==data.id);
-    cachedCloudRecords.push({id:data.id,name:r.name,approval:r.approval,amount:r.amount,category:r.category,aircraft:r.aircraft,tripDate:r.tripDate,details:r.details,photoCount:data.photoCount,folderUrl:data.folderUrl,submitter:receiptCurrentUser?.name||receiptCurrentUser?.email||'',updated:data.updated||new Date().toISOString()});
-    paintCloudList(data.id);
-   }
-   cloudStatus('저장 완료 · '+data.photoCount+'장 · 중복 저장 방지 적용');
-   saveRecord().catch(e=>console.warn('로컬 보관 실패',e));
-  } catch(e){
-   // A timeout can mean the server committed successfully but reply was lost.
-   // Preserve token for a retry; server returns prior result without creating files.
-   if(!/응답을 받지 못했습니다|시간 초과|timeout|network|네트워크/i.test(String(e.message||''))){
-    pendingSaveToken='';pendingSaveSignature='';
-   }else{
-    cloudStatus('응답 지연 · 저장 여부 불확실. 같은 화면에서 저장을 다시 누르면 중복 없이 확인/재시도합니다.');
-   }
-   throw e;
-  } finally {saveButton.disabled=false;cloudButton.disabled=false;saveButton.textContent=originalLabel;}
- });
-});
-$('cloudLoad').addEventListener('click',()=>runCloud('클라우드 불러오기',async()=>{receiptSetSaveComplete(false);lastCompletedSaveSignature='';const id=$('cloudList').value;if(!id)throw Error('클라우드 저장본을 먼저 선택하세요.');const d=await cloudRequest('load',{id});const r=d.record;currentId=r.id;cloudVersion=r.version||r.updated||'';pendingSaveToken='';pendingSaveSignature='';fillNames(r.name||'');for(const k of fields)$(k).value=r[k]||'';photos=d.photos|| (d.photo?[d.photo]:[]);selectedPhoto=0;folderUrl=d.folderUrl||r.folderUrl||'';syncPhotos();cloudStatus('클라우드 양식을 불러왔습니다. 필요한 경우 양식 저장을 눌러 기기에도 보관하세요.')}));
-$('cloudDelete').addEventListener('click',()=>runCloud('클라우드 삭제',async()=>{const id=$('cloudList').value;if(!id)throw Error('삭제할 저장본을 선택하세요.');if(!confirm('클라우드 저장본을 영구 삭제하시겠습니까?'))return;await cloudRequest('delete',{id});if(cloudListLoaded){cachedCloudRecords=cachedCloudRecords.filter(x=>x.id!==id);paintCloudList()}cloudStatus('클라우드 저장본 삭제 완료 (서버 호출 1회)')}));
-$('backendUrl').value='https://script.google.com/macros/s/AKfycbxrPy3v5wpemZXx-kyqlA6Dr3L0hybiyTHKFqtRxs3fizPS_Uor1Cno6fiegrQ2OOYHXA/exec';
-$('name').addEventListener('change',()=>{syncSelectedStaff();render()});for(const k of fields)$(k).addEventListener('input',render);
-$('uploadArea').addEventListener('click',()=>{if(!$('albumFile').disabled)$('albumFile').click()});$('uploadArea').addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();$('albumFile').click()}});$('cameraBtn').addEventListener('click',startCamera);$('albumBtn').addEventListener('click',()=>$('albumFile').click());$('cameraFile').addEventListener('change',e=>{readPhotos([...e.target.files]);e.target.value=''});$('albumFile').addEventListener('change',e=>{readPhotos([...e.target.files]);e.target.value=''});$('removePhoto').addEventListener('click',()=>{if(!photos.length)return;photos.splice(selectedPhoto,1);selectedPhoto=Math.max(0,Math.min(selectedPhoto,photos.length-1));syncPhotos()});$('closeCamera').addEventListener('click',stopCamera);$('takePhoto').addEventListener('click',takePhoto);$('saveBtn').addEventListener('click',saveRecord);$('newBtn').addEventListener('click',clearForm);$('savedList').addEventListener('change',e=>loadRecord(e.target.value));$('deleteBtn').addEventListener('click',deleteRecord);$('printBtn').addEventListener('click',()=>window.print());$('pngBtn').addEventListener('click',()=>downloadReceiptPng().catch(e=>notice(e.message)));window.addEventListener('beforeunload',stopCamera);staffInit();refreshSaved();render();
-  
-// Compact UI navigation: one create screen, one cloud list.
-function showCabinPage(page){
- const records=page==='records';
- document.querySelector('.layout').hidden=records;
- document.querySelector('.top-toolbar').hidden=records;
- $('recordsPage').hidden=!records;
- $('tabCreate').classList.toggle('active',!records);
- $('tabRecords').classList.toggle('active',records);
- if(records && !cloudListLoaded){$('jumpRefresh').click();}
-}
-$('tabCreate').addEventListener('click',()=>showCabinPage('create'));
-$('tabRecords').addEventListener('click',()=>showCabinPage('records'));
-$('topNew').addEventListener('click',()=>{if(photos.length || $('approval').value.trim()){if(!confirm('입력 중인 내용을 지우고 새 양식을 시작하시겠습니까?'))return;}clearForm();window.scrollTo({top:0,behavior:'smooth'});});
-$('topSave').addEventListener('click',()=>{if($('topSave').disabled)return;$('cloudSave').click();});
-
-
-// 승인번호는 입력 도중 제한하지 않습니다. 입력 완료(blur) 또는 저장 시 검증합니다.
-(function setupApprovalValidation(){
-  const approvalInput = document.getElementById('approval');
-  const saveIds = ['topSave','cloudSave','saveBtn'];
-  const valid = () => /^\d{8}$/.test(approvalInput.value.trim());
-  const warning = () => alert('승인번호는 정확히 8자리 숫자로 입력해야 합니다.');
-  // 빈 칸에서 다른 입력칸으로 이동할 때는 경고하지 않으며, 저장 시에는 필수 검증합니다.
-  approvalInput.addEventListener('blur', function(event){
-    const next = event.relatedTarget;
-    if (next && saveIds.includes(next.id)) return; // 저장 클릭 시 알림 중복 방지
-    if (approvalInput.value.trim() && !valid()) warning();
-  });
-  function validateOnSave(event){
-    // 모든 저장 경로에서 확인하고, 첫 번째 누락 항목만 안내합니다.
-    // 이벤트 캡처 단계에서 검사하므로 저장 요청이 전송되기 전에 차단됩니다.
-    const checks = [
-      ['approval', '승인번호를 입력하세요.'],
-      ['amount', '금액을 입력하세요.'],
-      ['category', '구분을 입력하세요.'],
-      ['aircraft', '기종을 입력하세요.'],
-      ['tripDate', '트립시작일을 입력하세요.'],
-      ['details', '세부내역을 입력하세요.']
-    ];
-    let issue = null;
-    for (const [id, message] of checks) {
-      const element = document.getElementById(id);
-      if (!element || !String(element.value || '').trim()) {
-        issue = {element, message};
-        break;
-      }
-    }
-    if (!issue && !valid()) issue = {element: approvalInput, message: '승인번호는 정확히 8자리 숫자로 입력해야 합니다.'};
-    if (!issue && (!Number.isFinite(Number(document.getElementById('amount').value)) || Number(document.getElementById('amount').value) <= 0)) {
-      issue = {element:document.getElementById('amount'), message:'금액은 0원보다 큰 숫자로 입력하세요.'};
-    }
-    if (!issue && !photos.length) issue = {element:document.getElementById('uploadArea'),message:'영수증 사진을 1장 이상 첨부하세요.'};
-    if (!issue) return;
-    event.preventDefault();
-    event.stopImmediatePropagation();
-    alert(issue.message);
-    if (issue.element && typeof issue.element.focus === 'function') issue.element.focus({preventScroll:false});
-  }
-  saveIds.forEach(function(id){
-    const button = document.getElementById(id);
-    if (button) button.addEventListener('click',validateOnSave,true);
-  });
-})();
-</script>
-</body>
+       </div>
+      </div>
+      <div class="form-section">
+       <div class="section-heading">
+        <span class="step">
+         02
+        </span>
+        <div>
+         <h3>
+          영수증 정보
+         </h3>
+         <p>
+          승인번호 앞자리 0을 유지합니다.
+         </p>
+        </div>
+       </div>
+       <div class="section-content">
+        <div class="two">
+         <label class="field">
+          승인번호
+          <input id="approval" inputmode="numeric" placeholder="예: 01234567" type="text"/>
+         </label>
+         <label class="field">
+          금액 (원)
+          <input id="amount" min="0" placeholder="75000" step="1" type="number"/>
+         </label>
+        </div>
+        <div class="two">
+         <label class="field">
+          구분
+          <select id="category">
+           <option value="">
+            구분 선택
+           </option>
+           <option value="기내지원비">
+            기내지원비
+           </option>
+           <option value="케이터링">
+            케이터링
+           </option>
+           <option value="교통비">
+            교통비
+           </option>
+           <option value="숙박비">
+            숙박비
+           </option>
+           <option value="기타">
+            기타
+           </option>
+          </select>
+         </label>
+         <label class="field">
+          기종
+          <select id="aircraft">
+           <option value="">
+            기종 선택
+           </option>
+           <option value="A319">
+            A319
+           </option>
+           <option value="G650">
+            G650
+           </option>
+          </select>
+         </label>
+        </div>
+        <div class="two">
+         <label class="field">
+          트립시작일
+          <input id="tripDate" type="date"/>
+         </label>
+         <label class="field">
+          세부내역
+          <input id="details" placeholder="케이터링_" type="text" value="케이터링_"/>
+         </label>
+        </div>
+       </div>
+      </div>
+      <div class="form-section">
+       <div class="section-heading">
+        <span class="step">
+         03
+        </span>
+        <div>
+         <h3>
+          사진 첨부
+         </h3>
+         <p>
+          카메라 촬영 또는 앨범에서 여러 장을 선택할 수 있습니다.
+         </p>
+        </div>
+       </div>
+       <div class="section-content">
+        <h3>
+         영수증 사진
+        </h3>
+        <div aria-label="영수증 사진 불러오기" class="uploader" id="uploadArea" role="button" tabindex="0">
+         <div class="blank" id="emptyImg">
+          사진을 촬영하거나 불러오세요.
+         </div>
+         <img alt="영수증 사진 미리보기" hidden="" id="inputImg"/>
+        </div>
+        <p class="hint">
+         승인번호 1건에 사진 여러 장을 추가할 수 있습니다. 여러 장은 Drive 폴더 링크 하나로 관리됩니다.
+        </p>
+        <div class="hint" id="photoCount">
+         첨부 0장
+        </div>
+        <div class="photo-strip" id="photoStrip">
+        </div>
+        <div class="actions">
+         <button class="btn primary" id="cameraBtn" type="button">
+          카메라 촬영
+         </button>
+         <button class="btn" id="albumBtn" type="button">
+          사진 불러오기
+         </button>
+         <button class="btn red" id="removePhoto" type="button">
+          선택 사진 삭제
+         </button>
+        </div>
+        <input accept="image/*" capture="environment" hidden="" id="cameraFile" type="file"/>
+        <input accept="image/*" hidden="" id="albumFile" multiple="" type="file"/>
+       </div>
+      </div>
+     </section>
+     <section class="panel preview">
+      <div class="preview-top">
+       <h2>
+        완성 양식 미리보기
+       </h2>
+       <div class="preview-save">
+        <button class="btn green toolbar-save" id="topSave" type="button">
+         저장
+        </button>
+        <span aria-live="polite" hidden="" id="topSaveStatus" role="status">
+         ✓ 파일 저장 완료
+        </span>
+       </div>
+       <button class="btn green" id="pngBtn" type="button">
+        양식 PNG 다운로드
+       </button>
+       <button class="btn primary" id="printBtn" style="display:none" type="button">
+        인쇄 / PDF 저장
+       </button>
+      </div>
+      <div class="paperwrap">
+       <div class="paper">
+        <div class="receipt-grid">
+         <div class="receipt-photo">
+          <span class="ph" id="printPlaceholder">
+           영수증 사진
+          </span>
+          <img alt="첨부 영수증" hidden="" id="printImg"/>
+         </div>
+         <div class="receipt-info">
+          <div class="line">
+           <div class="k">
+            이름
+           </div>
+           <div class="v" id="vname">
+            —
+           </div>
+          </div>
+          <div class="line">
+           <div class="k">
+            승인번호
+           </div>
+           <div class="v" id="vapproval">
+            —
+           </div>
+          </div>
+          <div class="line">
+           <div class="k">
+            금액 (원)
+           </div>
+           <div class="v" id="vamount">
+            —
+           </div>
+          </div>
+          <div class="noteblock">
+           <div class="note-rows">
+            <div class="note-row">
+             <div class="k">
+              구분
+             </div>
+             <div class="v" id="vcategory">
+              —
+             </div>
+            </div>
+            <div class="note-row">
+             <div class="k">
+              기종
+             </div>
+             <div class="v" id="vaircraft">
+              —
+             </div>
+            </div>
+            <div class="note-row">
+             <div class="k">
+              트립시작일
+             </div>
+             <div class="v" id="vtripDate">
+              —
+             </div>
+            </div>
+            <div class="note-row">
+             <div class="k">
+              세부내역
+             </div>
+             <div class="v" id="vdetails">
+              —
+             </div>
+            </div>
+           </div>
+          </div>
+         </div>
+        </div>
+       </div>
+      </div>
+      <p class="hint">
+       영수증 사진과 입력 정보가 결합된 완성 양식입니다. 이미지를 확인한 뒤 상단 저장 버튼을 누르세요.
+      </p>
+     </section>
+    </div>
+    <section class="panel list-page" hidden="" id="recordsPage">
+     <div class="list-head">
+      <div>
+       <h2>
+        저장된 영수증 목록
+       </h2>
+       <p class="small">
+        최신 업로드 순 · 체크한 영수증을 ZIP으로 다운로드
+       </p>
+      </div>
+      <button class="btn" id="jumpRefresh" type="button">
+       ↻ 목록 새로고침
+      </button>
+     </div>
+     <div class="records-summary" id="recordsSummary">
+      목록 조회 대기 중
+     </div>
+     <div class="record-actions">
+      <button class="btn" id="selectAllCloud" type="button">
+       전체 선택
+      </button>
+      <button class="btn" id="clearCloudChecks" type="button">
+       선택 해제
+      </button>
+      <button class="btn green" id="downloadSelectedZip" type="button">
+       선택 ZIP 다운로드
+      </button>
+      <button class="btn" id="deleteSelectedReceipts" style="background:#fff0f0;color:#b91c1c;border:1px solid #fecaca" type="button">
+       선택 삭제
+      </button>
+     </div>
+     <div aria-label="영수증 목록 정렬" class="records-sort-actions">
+      <span class="sort-caption">
+       정렬
+      </span>
+      <button class="btn active-sort" data-record-sort="updated" type="button">
+       최신순
+      </button>
+      <button class="btn" data-record-sort="name" type="button">
+       이름순 ↑
+      </button>
+      <button class="btn" data-record-sort="submitter" type="button">
+       제출자순 ↑
+      </button>
+      <button class="btn" data-record-sort="aircraft" type="button">
+       기종순 ↑
+      </button>
+     </div>
+     <div aria-live="polite" id="zipResult">
+     </div>
+     <div class="records-table-wrap">
+      <div class="record-grid" id="cloudRecordsGrid">
+       <p class="hint">
+        목록 새로고침 버튼을 누르면 저장본이 나타납니다.
+       </p>
+      </div>
+     </div>
+    </section>
+    <div aria-hidden="true" class="form-section storage-section" style="display:none !important">
+     <div class="section-heading">
+      <span class="step">
+       04
+      </span>
+      <div>
+       <h3>
+        저장 및 관리
+       </h3>
+       <p>
+        기기 저장 또는 Drive 클라우드 저장을 선택하세요.
+       </p>
+      </div>
+     </div>
+     <div class="section-content">
+      <div class="actions">
+       <button class="btn green" id="cloudSave" type="button">
+        Google Drive 저장
+       </button>
+       <button class="btn" id="pngBtnSimple" type="button">
+        PNG 다운로드
+       </button>
+       <button class="btn" id="newBtn" type="button">
+        새 양식
+       </button>
+      </div>
+      <details class="syncbox" style="margin-top:14px">
+       <summary style="cursor:pointer;font-weight:700">
+        서버 연결 설정 / 구성원 새로고침
+       </summary>
+       <input id="backendUrl" readonly="" style="display:none" type="url" value="https://script.google.com/macros/s/AKfycbxrPy3v5wpemZXx-kyqlA6Dr3L0hybiyTHKFqtRxs3fizPS_Uor1Cno6fiegrQ2OOYHXA/exec"/>
+       <div class="actions">
+        <button class="btn" id="connectCloud" type="button">
+         연결 재확인
+        </button>
+        <button class="btn" id="reloadStaff" type="button">
+         구성원 새로고침
+        </button>
+       </div>
+      </details>
+      <p class="hint" id="folderLink" style="display:none">
+      </p>
+      <div class="syncstatus" id="syncStatus">
+       Google Sheets 연결 확인 중...
+      </div>
+      <div style="margin-top:24px;display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap">
+       <h3 style="margin:0">
+        저장된 영수증 목록
+       </h3>
+      </div>
+      <p class="hint">
+       저장 시각(KST) · 승인번호 · 이름 · 금액 · 첨부 수로 구분됩니다. 선택 후 한 번에 ZIP 다운로드할 수 있습니다.
+      </p>
+      <div class="actions" style="margin:12px 0">
+      </div>
+      <div style="display:none">
+       <select id="savedList">
+       </select>
+       <button id="saveBtn">
+       </button>
+       <button id="deleteBtn">
+       </button>
+       <select id="cloudList">
+       </select>
+       <button id="cloudLoad">
+       </button>
+       <button id="cloudDelete">
+       </button>
+       <button id="staffQuickProxy">
+       </button>
+      </div>
+     </div>
+    </div>
+   </main>
+   <div class="camera-overlay" id="cameraOverlay">
+    <div class="camera-body">
+     <video autoplay="" id="video" muted="" playsinline="">
+     </video>
+     <div class="camera-controls">
+      <button class="btn" id="closeCamera" type="button">
+       취소
+      </button>
+      <button class="btn primary" id="takePhoto" type="button">
+       촬영
+      </button>
+     </div>
+    </div>
+   </div>
+   <div id="toast">
+   </div>
+  </div>
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+  <script> // Shared ApprovedUsers / Google Identity Services authorization. // The backend verifies the Google credential separately on every request. const RECEIPT_GOOGLE_CLIENT_ID='434108168386-jn8hp4mflhn68n98n6m9r1nm6iv7b3qe.apps.googleusercontent.com'; let receiptIdToken=''; let receiptSessionToken=''; let receiptCurrentUser=null; let receiptAuthenticated=false; let receiptAuthInProgress=false; const RECEIPT_SESSION_KEY='cabinReceiptSignedSessionV1'; function receiptShowAuthStatus(message){document.getElementById('receiptAuthStatus').textContent=message;} // Switching accounts explicitly revokes the old server session before starting a new login. async function receiptSwitchAccount(){  const btn=document.getElementById('receiptSwitchAccount');if(btn)btn.disabled=true;  try{if(receiptSessionToken)await cloudRequest('logout');}  catch(e){alert('기존 서버 세션을 폐기하지 못했습니다. 네트워크를 확인하고 다시 시도해 주세요. ('+e.message+')');if(btn)btn.disabled=false;return;}  try{window\.google?.accounts?.id?.disableAutoSelect();window\.google?.accounts?.id?.cancel();}catch(_){ }  receiptSignOut();if(btn)btn.disabled=false; } function receiptSignOut(){  receiptIdToken='';receiptSessionToken='';receiptCurrentUser=null;receiptAuthenticated=false;  document.getElementById('receiptAccountBar').style.display='none';  try{localStorage.removeItem(RECEIPT_SESSION_KEY);}catch(_){ }  document.getElementById('receiptProtectedRoot').style.display='none';  document.getElementById('receiptAuthScreen').style.display='flex';  receiptShowAuthStatus('다른 Google 계정을 선택해 로그인해 주세요.');  if(window\.google?.accounts?.id)google.accounts.id.initialize({client_id:RECEIPT_GOOGLE_CLIENT_ID,callback:receiptHandleGoogleCredential,auto_select:false,cancel_on_tap_outside:false});  receiptRenderGoogleButton(); } async function receiptFinishAuth(user){  receiptCurrentUser={email:user.email,name:user.name,role:user.role};  receiptAuthenticated=true;  document.getElementById('receiptAccountEmail').textContent='로그인: '+receiptCurrentUser.email;  document.getElementById('receiptAccountBar').style.display='flex';  document.getElementById('receiptProtectedRoot').style.display='block';  document.getElementById('receiptAuthScreen').style.display='none';  if(typeof connectAndLoadStaff==='function')await connectAndLoadStaff(); } async function receiptHandleGoogleCredential(response){  if(receiptAuthInProgress)return;  receiptAuthInProgress=true;  receiptShowAuthStatus('승인된 계정인지 확인하고 있습니다...');  try{   if(!response||!response.credential)throw Error('Google 로그인 정보가 없습니다.');   receiptIdToken=response.credential;   const user=await cloudRequest('auth'); // Login checked by portal's ApprovedUsers   if(!user.sessionToken||!user.expiresAt)throw Error('새 백엔드 배포가 필요합니다.');   receiptSessionToken=user.sessionToken;   try{localStorage.setItem(RECEIPT_SESSION_KEY,JSON.stringify({token:user.sessionToken,expiresAt:user.expiresAt}));}catch(_){ }   receiptIdToken=''; // Never retain Google ID token after exchange.   await receiptFinishAuth(user);  }catch(err){   receiptAuthenticated=false;receiptIdToken='';receiptSessionToken='';   receiptShowAuthStatus('접근 실패: '+err.message);receiptRenderGoogleButton();  }finally{receiptAuthInProgress=false;} } function receiptRenderGoogleButton(){  const el=document.getElementById('receiptGoogleButton');  if(!window\.google?.accounts?.id){setTimeout(receiptRenderGoogleButton,350);return;}  el.replaceChildren();  google.accounts.id.renderButton(el,{theme:'outline',size:'large',width:270,text:'continue_with',shape:'pill'}); } async function receiptStartAuth(){  receiptShowAuthStatus('기존 로그인 세션을 확인하고 있습니다...');  let saved=null;  try{saved=JSON.parse(localStorage.getItem(RECEIPT_SESSION_KEY)||'null');}catch(_){ }  if(saved?.token&&Number(saved.expiresAt)>Date.now()){   receiptSessionToken=saved.token;   try{    const user=await cloudRequest('session'); // Server validates HMAC and 24-hour expiry.    await receiptFinishAuth(user);    return;   }catch(_){receiptSessionToken='';try{localStorage.removeItem(RECEIPT_SESSION_KEY);}catch(__){} }  }  if(!window\.google?.accounts?.id){setTimeout(receiptStartAuth,300);return;}  google.accounts.id.initialize({client_id:RECEIPT_GOOGLE_CLIENT_ID,callback:receiptHandleGoogleCredential,auto_select:true,cancel_on_tap_outside:false});  receiptShowAuthStatus('Google 계정으로 로그인해 주세요.');  receiptRenderGoogleButton();  google.accounts.id.prompt(); } document.getElementById('receiptSwitchAccount').addEventListener('click',receiptSwitchAccount); window\.addEventListener('load',receiptStartAuth);    'use strict'; let EMPLOYEES=[]; // Google Sheets '구성원정보'에서만 불러옵니다. const fields=['approval','amount','category','aircraft','tripDate','details'];const $=id=>document.getElementById(id);const KEY='receiptTemplateSavedV1';let photo='',photos=[],selectedPhoto=0,folderUrl='',currentId='',stream=null,dbPromise=null;let cloudBusy=false,cloudVersion='',pendingSaveToken='',pendingSaveSignature='',lastCompletedSaveSignature='';const CLOUD_URL_KEY='receiptFlowCloudUrlV1'; function notice(t){$('toast').textContent=t;$('toast').style.display='block';clearTimeout(notice.timer);notice.timer=setTimeout(()=>$('toast').style.display='none',2600)} function staffInit(){  const previousName=$('name').value;  $('name').disabled=!EMPLOYEES.length;  fillNames(previousName);  $('staffStatus').textContent=EMPLOYEES.length   ? '구성원 '+EMPLOYEES.length+'명 · CABIN_RECEIPT / 구성원정보 자동 연동'   : '구성원정보를 자동으로 불러오는 중입니다. 연결에 실패하면 아래 상태 메시지를 확인하세요.'; } function esc(x){return String(x??'').replace(/[&<>"']/g,c=>({'&':'&','<':'<','>':'>','"':'"',"'":'''}[c]))} function fillNames(selection=''){  const names=new Map();  EMPLOYEES.forEach(e=>names.set(e.name,(names.get(e.name)||0)+1));  $('name').innerHTML='<option value="">이름 선택</option>'+EMPLOYEES.map(e=>\`<option value="${esc(e.id+'|'+e.name)}">${esc(e.name)}${names.get(e.name)>1?' ('+esc(e.dept)+')':''}</option>\`).join('');  const match=EMPLOYEES.find(e=>e.name===selection||e.id+'|'+e.name===selection);  $('name').value=match?match.id+'|'+match.name:'';  syncSelectedStaff();render(); } function selectedStaff(){return EMPLOYEES.find(e=>e.id+'|'+e.name===$('name').value)||null} function syncSelectedStaff(){const e=selectedStaff();$('dept').value=e?e.dept:''} function selectedName(){const e=selectedStaff();return e?e.name:''} function tripDisplay(v){if(!v)return '—';const [y,m,d]=v.split('-');return \`${d}${['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'][Number(m)-1]||m}, ${y}\`} function syncPhotos(){photo=photos[selectedPhoto]||'';render();} function drawPhotoStrip(){  $('photoCount').textContent='첨부 '+photos.length+'장 · 선택 '+(photos.length?selectedPhoto+1:0)+'번';  const host=$('photoStrip');host.innerHTML='';  photos.forEach((p,i)=>{const b=document.createElement('button');b.type='button';b.className='photo-chip'+(i===selectedPhoto?' selected':'');const img=document.createElement('img');img.src=p;img.alt=(i+1)+'번 영수증';const lbl=document.createElement('small');lbl.textContent=(i+1)+' / '+photos.length;b.append(img,lbl);b.addEventListener('click',()=>{selectedPhoto=i;syncPhotos()});host.append(b)});  const link=$('folderLink');link.style.display=folderUrl?'block':'none';link.innerHTML='';if(folderUrl){const a=document.createElement('a');a.href=folderUrl;a.target='_blank';a.rel='noopener noreferrer';a.textContent='Drive 영수증 묶음 폴더 열기 (하나의 링크)';link.append(a)} } function render(){if(lastCompletedSaveSignature && !$('topSaveStatus').hidden && currentId){try{if(receiptSaveSignature(record())!==lastCompletedSaveSignature)receiptSetSaveComplete(false)}catch(e){receiptSetSaveComplete(false)}}const v=id=>$(id).value.trim()||'—';$('vname').textContent=selectedName()||'—';$('vapproval').textContent=v('approval');$('vamount').textContent=$('amount').value?Number($('amount').value).toLocaleString('ko-KR'):'—';$('vcategory').textContent=v('category');$('vaircraft').textContent=v('aircraft');$('vtripDate').textContent=tripDisplay($('tripDate').value);$('vdetails').textContent=v('details');for(const [id,placeholder] of [['inputImg','emptyImg'],['printImg','printPlaceholder']]){$(id).hidden=!photo;$(placeholder).hidden=!!photo;if(photo && $(id).src!==photo)$(id).src=photo;if(!photo)$(id).removeAttribute('src')}drawPhotoStrip()} // VBA 파일명: 승인번호(승인번호)_정수금액원_MM.DD_이름.png (앞자리 0 유지) function safeFilename(s){return String(s).replace(/[\\/:*?"<>|]/g,'-').trim()} function fileBaseName(){  const approval=$('approval').value.trim()||'N-A';  const rawAmount=Number($('amount').value||0);  const amount=Number.isFinite(rawAmount)?String(Math.round(rawAmount)):'0';  const date=$('tripDate').value;  const md=date?/^\d{4}-(\d{2})-(\d{2})$/.test(date)?date.slice(5,7)+'.'+date.slice(8,10):date:'미입력';  return safeFilename(approval+'(승인번호)_'+amount+'원_'+md+'_'+(selectedName()||'이름없음')); } function finalImageFilename(i,total){return fileBaseName()+(total>1?'_'+String(i+1).padStart(2,'0'):'')+'.png'} let receiptImageDecodeCache=null; function decodeImage(src){  if(receiptImageDecodeCache&&receiptImageDecodeCache.has(src))return receiptImageDecodeCache.get(src);  const task=new Promise((resolve,reject)=>{const im=new Image();im.onload=()=>resolve(im);im.onerror=()=>reject(Error('이미지를 처리할 수 없습니다.'));im.src=src});  if(receiptImageDecodeCache)receiptImageDecodeCache.set(src,task);  return task; } // Off-main-thread-friendly encoder when supported; no change in image dimensions or PNG losslessness. function receiptCanvasDataURL(canvas,mime='image/png',quality){  if(!canvas.toBlob)return Promise.resolve(canvas.toDataURL(mime,quality));  return new Promise((resolve,reject)=>canvas.toBlob(blob=>{   if(!blob){reject(Error('이미지 인코딩에 실패했습니다.'));return;}   const reader=new FileReader();reader.onload=()=>resolve(reader.result);reader.onerror=()=>reject(Error('이미지 읽기에 실패했습니다.'));reader.readAsDataURL(blob);  },mime,quality)); } function wrapCanvasText(ctx,value,x,y,maxWidth,lineH,maxLines=3){  const chars=Array.from(String(value||'—'));let line='',lines=0;  for(const ch of chars){if(ctx.measureText(line+ch).width>maxWidth&&line){ctx.fillText(line,x,y+lines*lineH);lines++;line='';if(lines>=maxLines)return;}line+=ch;}  if(line)ctx.fillText(line,x,y+lines*lineH); } async function createReceiptPng(src,targetCtx=null,offsetY=0){  const im=await decodeImage(src);  const c=targetCtx?null:document.createElement('canvas');  if(c){c.width=1600;c.height=1700;}  const g=targetCtx||c.getContext('2d');  g.save();  if(targetCtx)g.translate(0,offsetY);  const left=24,top=24,right=1576,bottom=1676,divide=1033;  const infoWidth=right-divide,upperLabelEnd=divide+infoWidth*.35;  const noteSecondEnd=upperLabelEnd;  const topRowHeight=116,noteTop=top+3*topRowHeight;  const noteRowHeight=(bottom-noteTop)/4;  g.fillStyle='#fff';g.fillRect(0,0,1600,1700);  const ratio=Math.min((divide-left-32)/im.width,(bottom-top-32)/im.height);  const w=im.width*ratio,h=im.height*ratio;  g.drawImage(im,(left+divide-w)/2,(top+bottom-h)/2,w,h);  g.strokeStyle='#202b39';g.lineWidth=2;  function line(x1,y1,x2,y2){g.beginPath();g.moveTo(x1,y1);g.lineTo(x2,y2);g.stroke();}  // 정보 테이블은 모두 한 줄로 표시하고, 셀 너비에 따라 글씨를 자동 축소합니다.  function fitCellText(text,maxWidth,baseFont,minFont,weight='bold'){    text=String(text==null||text===''?'—':text);    let size=baseFont;    while(size>minFont){g.font=weight+' '+size+'px sans-serif';if(g.measureText(text).width<=maxWidth)break;size--;}    g.font=weight+' '+size+'px sans-serif';    if(g.measureText(text).width>maxWidth){      while(text.length>1&&g.measureText(text+'…').width>maxWidth)text=text.slice(0,-1);      text+='…';    }    return text;  }  function label(text,x0,y0,x1,y1,fontsize=23){    g.fillStyle='#f0f2f5';g.fillRect(x0+1,y0+1,x1-x0-2,y1-y0-2);    g.fillStyle='#263b55';g.textAlign='center';g.textBaseline='middle';    const fitted=fitCellText(text,x1-x0-12,fontsize,12);    g.fillText(fitted,(x0+x1)/2,(y0+y1)/2);    g.textAlign='left';g.textBaseline='alphabetic';  }  function value(text,x0,y0,x1,y1,fontsize=25){    g.fillStyle='#18293b';g.textAlign='left';g.textBaseline='middle';    const fitted=fitCellText(text,x1-x0-24,fontsize,12);    g.fillText(fitted,x0+12,(y0+y1)/2);    g.textBaseline='alphabetic';  }  const person=selectedName()||'이름없음';  const main=[['이름',person],['승인번호',$('approval').value||'—'],['금액 (원)',Number($('amount').value||0).toLocaleString('ko-KR')]];  main.forEach(([title,v],i)=>{let y0=top+i*topRowHeight,y1=y0+topRowHeight;    label(title,divide,y0,upperLabelEnd,y1);value(v,upperLabelEnd,y0,right,y1);    if(i<2)line(divide,y1,right,y1);  });  const notes=[['구분',$('category').value],['기종',$('aircraft').value],['트립시작일',tripDisplay($('tripDate').value)],['세부내역',$('details').value]];  notes.forEach(([title,v],i)=>{const y0=noteTop+i*noteRowHeight,y1=y0+noteRowHeight;    label(title,divide,y0,noteSecondEnd,y1,23);    value(v,noteSecondEnd,y0,right,y1,26);    if(i<3)line(divide,y1,right,y1);  });  line(divide,top,divide,bottom);  line(upperLabelEnd,top,upperLabelEnd,bottom);  line(divide,noteTop,right,noteTop);  g.strokeRect(left,top,right-left,bottom-top);  g.restore();  return c?c.toDataURL('image/png'):null; } async function downloadReceiptPng(){  if(!photos.length){notice('영수증 사진을 추가하세요.');return;}  if(!confirm('트립시작일 '+tripDisplay($('tripDate').value)+'이 맞습니까?'))return;  const url=await createCombinedReceiptPng();  const a=document.createElement('a');a.download=combinedReceiptFilename();a.href=url;  document.body.append(a);a.click();a.remove();  notice('완성 PNG 1개 다운로드 · 첫 사진+정보, 나머지 '+Math.max(0,photos.length-1)+'장'); }  // 첫 구역: 사진 1장 + 영수증 정보 테이블. // 두 번째 구역부터: 테이블 없이 첨부 사진만 최대 크기로 표시. async function drawAdditionalPhoto(src, ctx, offsetY){  const im=await decodeImage(src);  const padding=24, availableW=1600-padding*2, availableH=940-padding*2;  const scale=Math.min(availableW/im.width,availableH/im.height);  const w=im.width*scale,h=im.height*scale;  ctx.save();  ctx.fillStyle='#ffffff';ctx.fillRect(0,offsetY,1600,940);  ctx.drawImage(im,(1600-w)/2,offsetY+(940-h)/2,w,h);  ctx.restore(); } // 첫 구역만 테이블을 포함하고 이후는 사진만 세로로 연결하는 PNG 1개. // Keep below the server's 24,500,000-character total Base64 limit, with form overhead margin. const RECEIPT_MAX_TOTAL_BASE64=23000000; const RECEIPT_MAX_PHOTO_BASE64=2200000; // server per-photo cap: 2,400,000 function receiptDataSize(data){return String(data||'').length;} async function createCombinedReceiptPng(photoData=photos){  if(!photoData.length || photoData.length>8)throw Error('사진은 1~8장을 첨부해야 합니다.');  const available=RECEIPT_MAX_TOTAL_BASE64-photoData.reduce((n,p)=>n+receiptDataSize(p),0);  if(available<250000)throw Error('사진 용량이 너무 큽니다. 사진 해상도를 줄인 후 다시 시도하세요.');  const fullHeight=1700+940*(photoData.length-1);  receiptImageDecodeCache=new Map();  const preload=photoData.map(src=>decodeImage(src));  try{await Promise.all(preload);}catch(e){receiptImageDecodeCache=null;throw e;}  // Render photos and table only once. Size fallback resamples pixels instead of decoding/redrawing each image.  const master=document.createElement('canvas');  master.width=1600;master.height=fullHeight;  const mainCtx=master.getContext('2d',{alpha:false});  if(!mainCtx)throw Error('이미지 캔버스를 생성하지 못했습니다.');  mainCtx.fillStyle='#ffffff';mainCtx.fillRect(0,0,1600,fullHeight);  try{   await createReceiptPng(photoData[0],mainCtx,0);   for(let i=1;i<photoData.length;i++)await drawAdditionalPhoto(photoData[i],mainCtx,1700+(i-1)*940);   // Most receipts fit at native 1600px: only one PNG encode in the common case.   let result=await receiptCanvasDataURL(master,'image/png');   if(result.length<=available)return result;   // Rare oversized receipts: reuse rendered image, never rebuild text/photo layers.   const reduced=document.createElement('canvas');   const scales=[.9,.8,.7,.6,.5,.4,.3];   for(const scale of scales){    reduced.width=Math.max(1,Math.round(master.width*scale));    reduced.height=Math.max(1,Math.round(master.height*scale));    const ctx=reduced.getContext('2d',{alpha:false});    if(!ctx)break;    ctx.fillStyle='#ffffff';ctx.fillRect(0,0,reduced.width,reduced.height);    ctx.drawImage(master,0,0,reduced.width,reduced.height);    result=await receiptCanvasDataURL(reduced,'image/png');    if(result.length<=available){reduced.width=1;reduced.height=1;return result;}   }   reduced.width=1;reduced.height=1;   throw Error('PNG 파일이 서버 전송 용량을 초과했습니다. 사진 수를 줄여 저장하세요.');  }finally{master.width=1;master.height=1;receiptImageDecodeCache=null;} } function combinedReceiptFilename(){return fileBaseName()+'.png'} // Prefer higher resolution; adapt quality and pixel size to remain under GAS per-photo limit. function receiptEncodeJpeg(canvas,maxChars=RECEIPT_MAX_PHOTO_BASE64){  for(const quality of [.9,.85,.8,.75,.7]){   const encoded=canvas.toDataURL('image/jpeg',quality);   if(encoded.length<=maxChars)return encoded;  }  const tmp=document.createElement('canvas');  for(const factor of [.9,.8,.7,.6,.5,.4]){   tmp.width=Math.max(1,Math.round(canvas.width*factor));   tmp.height=Math.max(1,Math.round(canvas.height*factor));   tmp.getContext('2d',{alpha:false}).drawImage(canvas,0,0,tmp.width,tmp.height);   for(const q of [.85,.75,.65]){    const encoded=tmp.toDataURL('image/jpeg',q);    if(encoded.length<=maxChars)return encoded;   }  }  throw Error('사진을 서버 용량에 맞게 변환하지 못했습니다.'); } function resizePhoto(file){return new Promise((resolve,reject)=>{  if(!file.type.startsWith('image/'))return reject(Error('이미지 파일만 선택할 수 있습니다.'));  const img=new Image(),url=URL.createObjectURL(file);  img.onload=()=>{try{   const s=Math.min(1,1600/Math.max(img.naturalWidth,img.naturalHeight));   const c=document.createElement('canvas');   c.width=Math.max(1,Math.round(img.naturalWidth*s));c.height=Math.max(1,Math.round(img.naturalHeight*s));   c.getContext('2d',{alpha:false}).drawImage(img,0,0,c.width,c.height);   const encoded=receiptEncodeJpeg(c);c.width=1;c.height=1;URL.revokeObjectURL(url);resolve(encoded);  }catch(e){URL.revokeObjectURL(url);reject(e)}};  img.onerror=()=>{URL.revokeObjectURL(url);reject(Error('사진을 읽지 못했습니다.'))};img.src=url; })} let receiptPhotosProcessing=false; async function readPhotos(files){  if(receiptPhotosProcessing){notice('사진 처리 중입니다.');return;}  if(photos.length+files.length>8){notice('한 건당 사진은 최대 8장입니다.');return;}  if(!files.length)return;  receiptPhotosProcessing=true;  try{   // Decode/compress at most 3 photos concurrently: good throughput without 8 large canvases at once.   const converted=new Array(files.length);let next=0;   async function worker(){while(next<files.length){const index=next++;converted[index]=await resizePhoto(files[index]);}}   await Promise.all(Array.from({length:Math.min(3,files.length)},()=>worker()));   photos.push(...converted);selectedPhoto=photos.length-1;syncPhotos();notice('첨부 '+photos.length+'장');  }catch(e){notice(e.message)}finally{receiptPhotosProcessing=false;} } function readPhoto(file){return readPhotos(file?[file]:[])} async function startCamera(){try{if(!navigator.mediaDevices?.getUserMedia)throw Error('브라우저 카메라를 사용할 수 없습니다.');stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'},width:{ideal:1920}},audio:false});$('video').srcObject=stream;$('cameraOverlay').classList.add('open')}catch(e){stopCamera();$('cameraFile').click();notice('기본 카메라 앱으로 전환합니다.')}} function stopCamera(){if(stream){stream.getTracks().forEach(t=>t.stop());stream=null}$('video').srcObject=null;$('cameraOverlay').classList.remove('open')} function takePhoto(){const v=$('video');if(!v.videoWidth){notice('카메라 준비 중입니다.');return}if(photos.length>=8){stopCamera();notice('최대 8장입니다.');return}const can=document.createElement('canvas'),s=Math.min(1,1600/Math.max(v.videoWidth,v.videoHeight));can.width=Math.round(v.videoWidth*s);can.height=Math.round(v.videoHeight*s);can.getContext('2d').drawImage(v,0,0,can.width,can.height);photos.push(receiptEncodeJpeg(can));selectedPhoto=photos.length-1;stopCamera();syncPhotos()} function saved(){try{return JSON.parse(localStorage.getItem(KEY)||'[]')}catch{return []}}function setSaved(x){localStorage.setItem(KEY,JSON.stringify(x))} function record(){return{id:currentId||('r'+Date.now().toString(36)+Math.random().toString(36).slice(2)),dept:$('dept').value,name:selectedName(),...Object.fromEntries(fields.map(id=>[id,$(id).value])),folderUrl,baseVersion:cloudVersion,updated:new Date().toISOString()}} function refreshSaved(){const rows=saved().sort((a,b)=>b.updated.localeCompare(a.updated));$('savedList').innerHTML='<option value="">새 양식 / 저장본 선택</option>'+rows.map(r=>\`<option value="${esc(r.id)}">${esc(r.name||'미지정')} · ${esc(r.approval||'승인번호 없음')} · ${esc((r.updated||'').slice(0,10))}</option>\`).join('');$('savedList').value=currentId} function openDb(){return dbPromise||(dbPromise=new Promise((res,rej)=>{const q=indexedDB.open('receiptTemplatePhotosV1',1);q.onupgradeneeded=()=>q.result.createObjectStore('photos');q.onsuccess=()=>res(q.result);q.onerror=()=>rej(q.error)}))} async function photoOp(id,value,mode){const db=await openDb();return new Promise((res,rej)=>{const tx=db.transaction('photos',mode==='get'?'readonly':'readwrite'),s=tx.objectStore('photos');const r=mode==='get'?s.get(id):mode==='delete'?s.delete(id):s.put(value,id);r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)})} async function saveRecord(){const r=record();try{await photoOp(r.id,photos,'put');const list=saved().filter(e=>e.id!==r.id);list.push(r);setSaved(list);currentId=r.id;refreshSaved();notice('양식을 저장했습니다.')}catch(e){notice('저장 실패: 저장 공간 또는 브라우저 설정을 확인하세요.')}} function clearForm(){receiptSetSaveComplete(false);lastCompletedSaveSignature='';const category=$('category').value;const aircraft=$('aircraft').value;const previousName=$('name').value;currentId='';cloudVersion='';pendingSaveToken='';pendingSaveSignature='';fillNames(previousName);for(const id of fields)$(id).value='';$('category').value=category;$('aircraft').value=aircraft;$('details').value='케이터링_';photos=[];selectedPhoto=0;folderUrl='';syncPhotos();refreshSaved();render()} async function loadRecord(id){receiptSetSaveComplete(false);lastCompletedSaveSignature='';if(!id)return clearForm();const r=saved().find(x=>x.id===id);if(!r)return;currentId=id;cloudVersion=r.baseVersion||'';pendingSaveToken='';pendingSaveSignature='';fillNames(r.name||'');for(const k of fields)$(k).value=r[k]||'';try{{const savedPhotos=await photoOp(id,null,'get');photos=Array.isArray(savedPhotos)?savedPhotos:(savedPhotos?[savedPhotos]:[]);selectedPhoto=0;folderUrl=r.folderUrl||'';syncPhotos()}}catch{photos=[];selectedPhoto=0;folderUrl='';syncPhotos()}render();refreshSaved();notice('저장된 양식을 불러왔습니다.')} async function deleteRecord(){if(!currentId){notice('삭제할 저장본을 선택하세요.');return}if(!confirm('선택한 저장본을 삭제하시겠습니까?'))return;try{await photoOp(currentId,null,'delete');setSaved(saved().filter(x=>x.id!==currentId));clearForm();notice('삭제했습니다.')}catch(e){notice('삭제하지 못했습니다.')}} // Google Apps Script HTML form bridge: avoids GitHub Pages-to-Apps Script CORS restrictions. function backendAddress(){const url=$('backendUrl').value.trim();if(!/^https://script\\.google\\.com/macros/s/[\w-]+/exec$/.test(url))throw Error('유효한 Apps Script /exec URL을 입력하세요.');return url} function cloudCredentials(){return {url:backendAddress()}} function cloudStatus(t){$('syncStatus').textContent=t} function cloudRequest(action,body={}){  const {url}=cloudCredentials();const requestId='r'+Date.now().toString(36)+Math.random().toString(36).slice(2);  return new Promise((resolve,reject)=>{   const iframe=document.createElement('iframe');iframe.name='bridge_'+requestId;iframe.hidden=true;   const form=document.createElement('form');form.method='POST';form.action=url;form.target=iframe.name;form.hidden=true;   const params={action,requestId,idToken:receiptIdToken,sessionToken:receiptSessionToken,...body};for(const [k,v] of Object.entries(params)){const i=document.createElement('input');i.type='hidden';i.name=k;i.value=String(v??'');form.append(i)}   let done=false;const finish=()=>{if(done)return;done=true;clearTimeout(timer);window\.removeEventListener('message',onMessage);form.remove();iframe.remove()};   const timer=setTimeout(()=>{finish();reject(Error('Apps Script 응답을 받지 못했습니다(90초). /exec 주소를 시크릿 창에서 직접 열었을 때 Google 로그인이 나타나면 배포 권한 문제입니다. [배포 관리 → 새 버전, 실행 사용자: 나, 액세스: 모든 사용자]로 수정하세요.'))},90000);   function onMessage(e){const m=e.data;if(!m||m.app!=='receipt-template-bridge-v1'||m.requestId!==requestId)return;    // Apps Script HTMLService responses come from googleusercontent.com, not script.google.com.    // HTMLService can nest its postMessage sender in an internal iframe; e.source may differ.    // Trust only Google script origins, the unpredictable requestId, and the app marker.    if(!/^https://([a-z0-9-]+\\.)*googleusercontent\\.com$/i.test(e.origin)&&e.origin!=='https://script.google.com')return;    finish();if(m.ok)resolve(m.data);else {if(/Google 로그인|승인되지 않은|사용 권한|로그인 세션/.test(String(m.error||'')))setTimeout(receiptSignOut,0);reject(Error(m.error||'요청 실패'))}}   window\.addEventListener('message',onMessage);document.body.append(iframe,form);form.submit();  }); } async function runCloud(label,fn){if(cloudBusy)return;cloudBusy=true;cloudStatus(label+'...');try{await fn()}catch(e){cloudStatus('오류: '+e.message);$('staffStatus').textContent='구성원 연결 실패: '+e.message;notice(e.message)}finally{cloudBusy=false}} // 목록은 사용자가 요청할 때만 조회합니다. 저장/삭제 후에는 화면 목록만 갱신합니다. let cachedCloudRecords=[]; let cloudListLoaded=false; let receiptSortKey='updated'; let receiptSortAscending=false; const receiptSorter=new Intl.Collator('ko-KR',{numeric:true,sensitivity:'base'}); function applyReceiptSort(rows){  return rows.sort((a,b)=>{   if(receiptSortKey==='updated'){    const n=String(a.updated||'').localeCompare(String(b.updated||''));    return receiptSortAscending?n:-n;   }   const left=String(a[receiptSortKey]||'').trim();   const right=String(b[receiptSortKey]||'').trim();   // 비어 있는 제출자(과거 기록)는 정렬 방향과 관계없이 아래에 둡니다.   if(!left&&right)return 1;   if(left&&!right)return -1;   const n=receiptSorter.compare(left,right);   return n===0?String(b.updated||'').localeCompare(String(a.updated||'')):(receiptSortAscending?n:-n);  }); } function renderReceiptSortButtons(){  document.querySelectorAll('[data-record-sort]').forEach(btn=>{   const active=btn.dataset.recordSort===receiptSortKey;   btn.classList.toggle('active-sort',active);   btn.setAttribute('aria-pressed',String(active));   const title={updated:'최신순',name:'이름순',submitter:'제출자순',aircraft:'기종순'}[btn.dataset.recordSort];   btn.textContent=title+(active?(receiptSortAscending?' ↑':' ↓'):(btn.dataset.recordSort==='updated'?'':' ↑'));  }); } document.querySelectorAll('[data-record-sort]').forEach(btn=>btn.addEventListener('click',()=>{  const key=btn.dataset.recordSort;  receiptSortAscending=receiptSortKey===key?!receiptSortAscending:(key!=='updated');  receiptSortKey=key;  renderReceiptSortButtons();  paintCloudList(); })); renderReceiptSortButtons(); function kstTime(iso){if(!iso)return '-';const d=new Date(iso);return isNaN(d.getTime())?iso:new Intl.DateTimeFormat('ko-KR',{timeZone:'Asia/Seoul',year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hour12:false}).format(d)} function paintCloudList(selected=''){  const rows=applyReceiptSort([...cachedCloudRecords]);  $('cloudList').innerHTML='<option value="">클라우드 저장본 선택</option>'+rows.map(r=>\`<option value="${esc(r.id)}">${esc(r.approval||'-')}</option>\`).join('');$('cloudList').value=selected;  const checked=new Set([...document.querySelectorAll('.cloud-check:checked')].map(x=>x.value));  $('recordsSummary').textContent=\`총 ${rows.length}건 · ${ {updated:'업로드일',name:'이름',submitter:'제출자',aircraft:'기종'}[receiptSortKey] } ${receiptSortAscending?'오름차순':'내림차순'} 정렬 (KST)\`;  const header='<div class="record-head"><span>선택</span><span>업로드 (KST)</span><span>승인번호</span><span>이름</span><span>금액</span><span>구분</span><span>기종</span><span>트립시작일</span><span>세부내역</span><span>사진</span><span>파일</span><span>제출자</span></div>';  $('cloudRecordsGrid').innerHTML=header+(rows.length?rows.map(r=>\`<label class="record-row"><input class="cloud-check" type="checkbox" value="${esc(r.id)}" ${checked.has(r.id)?'checked':''}/><span class="record-cells"><span class="record-cell">${esc(kstTime(r.updated))}</span><span class="record-cell"><b>${esc(r.approval||'-')}</b></span><span class="record-cell">${esc(r.name||'-')}</span><span class="record-cell">${esc(Number(r.amount||0).toLocaleString('ko-KR'))}원</span><span class="record-cell">${esc(r.category||'-')}</span><span class="record-cell">${esc(r.aircraft||'-')}</span><span class="record-cell">${esc(r.tripDate||'-')}</span><span class="record-cell">${esc(r.details||'-')}</span><span class="record-cell">${Number(r.photoCount||1)}장</span><span class="record-cell folder">${r.folderUrl?'<a href="'+esc(r.folderUrl)+'" target="_blank" rel="noopener" onclick="event.stopPropagation()">Drive ↗</a>':'-'}</span><span class="record-cell">${esc(r.submitter||'-')}</span></span></label>\`).join(''):'<div class="empty-records">저장된 영수증이 없습니다.</div>'); }  async function updateCloudList(){  const data=await cloudRequest('list');cachedCloudRecords=data.records||[];cloudListLoaded=true;  paintCloudList();cloudStatus('클라우드 목록 '+cachedCloudRecords.length+'건 확인 (수동 새로고침)'); } function applyStaffData(data){  const list=Array.isArray(data.employees)?data.employees:[];  if(data.spreadsheetId&&data.spreadsheetId!=='1D9MmyRf0EBhMRAqU0gV8XdV9fsIieRa8Mjil3PIfLnk')throw Error('백엔드가 다른 스프레드시트를 읽습니다. Apps Script 코드를 새 버전으로 재배포하세요. 현재 ID: '+data.spreadsheetId);  if(!list.length)throw Error('구성원정보가 0명입니다. Apps Script에서 testCabinReceiptEmployees() 실행 후 로그를 확인하세요.');  EMPLOYEES=list.map(e=>({id:String(e.id||''),name:String(e.name||''),dept:String(e.dept||'')}));  staffInit(); } async function connectAndLoadStaff(){  await runCloud('구성원정보 불러오는 중',async()=>{   const data=await cloudRequest('ping');applyStaffData(data);   try{localStorage.setItem(CLOUD_URL_KEY,backendAddress())}catch(e){}   cloudStatus('연결 성공 · CABIN_RECEIPT 구성원 '+EMPLOYEES.length+'명 로드 · '+(data.sheetName||'구성원정보')+' (서버 1회 호출)');   }); } $('connectCloud').addEventListener('click',connectAndLoadStaff);  $('reloadStaff').addEventListener('click',()=>runCloud('구성원 새로고침',async()=>{const data=await cloudRequest('employees');applyStaffData(data);cloudStatus('구성원 최신 목록 '+EMPLOYEES.length+'명 로드 완료 (서버 1회 호출)')})); $('pngBtnSimple').addEventListener('click',()=>downloadReceiptPng().catch(e=>notice(e.message))); $('jumpRefresh').addEventListener('click',()=>runCloud('클라우드 목록 조회',updateCloudList)); $('selectAllCloud').addEventListener('click',()=>document.querySelectorAll('.cloud-check').forEach(c=>c.checked=true)); $('clearCloudChecks').addEventListener('click',()=>document.querySelectorAll('.cloud-check').forEach(c=>c.checked=false)); $('deleteSelectedReceipts').addEventListener('click',()=>runCloud('영수증 선택 삭제',async()=>{  const selected=[...document.querySelectorAll('.cloud-check:checked')].map(c=>c.value);  if(!selected.length)throw Error('삭제할 영수증을 선택하세요.');  if(selected.length>25)throw Error('한 번에 최대 25건만 삭제할 수 있습니다.');  const email=String(receiptCurrentUser?.email||'').toLowerCase();  const superusers=['sktsbyu@gmail.com','sbyu87@gmail.com'];  const forbidden=cachedCloudRecords.filter(r=>selected.includes(r.id)&&!superusers.includes(email)&&String(r.submitterEmail||'').toLowerCase()!==email);  if(forbidden.length)throw Error('본인이 제출한 영수증만 삭제할 수 있습니다. 제출자 정보가 없는 과거 기록은 지정된 관리자만 삭제할 수 있습니다.');  if(!confirm('선택한 영수증 '+selected.length+'건을 삭제하시겠습니까?\n\nGoogle Sheets 기록이 삭제되고, 해당 Google Drive 폴더 및 사진·완성 PNG 파일은 휴지통으로 이동합니다.\n\n확인을 누르면 삭제를 진행합니다.'))return;  const result=await cloudRequest('deleteSelected',{ids:JSON.stringify(selected)});  cachedCloudRecords=cachedCloudRecords.filter(r=>!selected.includes(r.id));  paintCloudList();  $('zipResult').textContent='영수증 '+result.count+'건 삭제 완료 · Drive 폴더 휴지통 이동';  cloudStatus('선택한 '+result.count+'건 삭제 완료'); })); $('downloadSelectedZip').addEventListener('click',()=>runCloud('ZIP 생성',async()=>{  const ids=[...document.querySelectorAll('.cloud-check:checked')].map(c=>c.value);  if(!ids.length)throw Error('다운로드할 영수증을 선택하세요.');  if(ids.length>25)throw Error('한 번에 최대 25건을 선택할 수 있습니다.');  $('zipResult').textContent='ZIP 생성 중...';  const data=await cloudRequest('zip',{ids:JSON.stringify(ids)});  const a=document.createElement('a');a.href=data.url;a.target='_blank';a.rel='noopener';a.textContent='ZIP 다운로드: '+data.name+' ('+data.count+'건 / '+data.files+'개 파일)';  $('zipResult').replaceChildren(a);cloudStatus('ZIP 준비 완료 · 아래 링크를 눌러 다운로드하세요.'); })); // 같은 양식/사진의 재클릭은 추가 파일을 만들지 않습니다. 수정한 내용은 다시 저장할 수 있습니다. function receiptSetSaveComplete(yes){$('topSaveStatus').hidden=!yes;} function receiptSaveSignature(r){  const values=[r.id,r.dept,r.name,...fields.map(k=>String(r[k]||''))];  // 원본 이미지 전부를 복사/직렬화하지 않고 변경 여부만 확인합니다.  return JSON.stringify(values)+'|'+photos.map(p=>String(p.length)+':'+p.slice(0,96)+':'+p.slice(-96)).join('|'); } $('cloudSave').addEventListener('click',()=>{  if(cloudBusy)return; // 연타/복수 저장 요청을 시작 단계에서 차단  runCloud('클라우드 저장',async()=>{   const r=record();   if(!r.name)throw Error('이름을 선택하세요.');   if(!photos.length)throw Error('영수증 사진을 첨부하세요.');   if(!/^\d{8}$/.test(String(r.approval||'').trim()))throw Error('승인번호는 정확히 8자리 숫자로 입력해야 합니다.');   if(!currentId)currentId=r.id;   r.id=currentId;   const signature=receiptSaveSignature(r);   if(lastCompletedSaveSignature===signature && cloudVersion){    receiptSetSaveComplete(true);    cloudStatus('이미 저장한 영수증입니다. 중복 파일을 생성하지 않았습니다.');    return;   }   // Fast path: PNG rendering and initial duplicate-list query proceed concurrently.   // Keep duplicate warning and server-side save validation unchanged.   receiptSetSaveComplete(false);   const saveButton=$('topSave'), cloudButton=$('cloudSave');   saveButton.disabled=true;cloudButton.disabled=true;   const originalLabel=saveButton.textContent;   saveButton.textContent='저장 중…';   const beganAt=performance.now();   const pngTask=createCombinedReceiptPng();   // Attach an early rejection handler so an image failure doesn't become unhandled   // while the separate list lookup completes.   const safePngTask=pngTask.then(value=>({ok:true,value}),error=>({ok:false,error}));   try{    if(!cloudListLoaded){     const dupList=await cloudRequest('list');     cachedCloudRecords=dupList.records||[];     cloudListLoaded=true;     paintCloudList();    }   const possiblyDuplicate=cachedCloudRecords.filter(x=>x.id!==r.id && String(x.approval||'').trim()===String(r.approval||'').trim());   if(possiblyDuplicate.length){    const identical=possiblyDuplicate.filter(x=>Number(x.amount||0)===Number(r.amount||0) && String(x.tripDate||'')===String(r.tripDate||''));    const promptText= identical.length      ? '같은 승인번호·금액·트립시작일의 영수증이 '+identical.length+'건 있습니다.\n\n이미 제출한 영수증인지 확인하세요.\n별도 거래가 맞다면 [확인]을 눌러 저장할 수 있습니다.'      : '같은 승인번호를 가진 영수증이 '+possiblyDuplicate.length+'건 있습니다.\n승인번호는 서로 다른 거래에서 재사용될 수 있습니다.\n\n별도 거래로 저장하시겠습니까?';    if(!confirm(promptText))throw Error("저장이 취소되었습니다.");   }    const pngResult=await safePngTask;    if(!pngResult.ok)throw pngResult.error;    const combinedPng=pngResult.value;    if(photos.reduce((n,p)=>n+p.length,0)+combinedPng.length>RECEIPT_MAX_TOTAL_BASE64)throw Error('이미지 전송 용량을 초과했습니다.');    const outputs=[combinedPng];    const names=[combinedReceiptFilename()];    // Retain the SAME token and record ID after a timeout: safe idempotent retry.    // Changed data must get a NEW token; the previous uncertain save is never overwritten silently.    if(pendingSaveSignature!==signature){pendingSaveToken='';pendingSaveSignature=signature;}    if(!pendingSaveToken)pendingSaveToken='save_'+Date.now().toString(36)+'_'+Math.random().toString(36).slice(2);    const data=await cloudRequest('save',{payload:JSON.stringify({...r,photos,outputs,names,baseVersion:cloudVersion,saveToken:pendingSaveToken})});    console.info('[CABIN RECEIPT] save elapsed',Math.round(performance.now()-beganAt),'ms; photos',photos.length);    currentId=data.id;cloudVersion=data.baseVersion||data.updated||'';    pendingSaveToken='';pendingSaveSignature='';folderUrl=data.folderUrl||'';    // 서버 저장 완료를 즉시 표시. 브라우저의 보조 로컬 보관은 뒤에서 처리합니다.    lastCompletedSaveSignature=signature;    receiptSetSaveComplete(true);    if(cloudListLoaded){     cachedCloudRecords=cachedCloudRecords.filter(x=>x.id!==data.id);     cachedCloudRecords.push({id:data.id,name:r.name,approval:r.approval,amount:r.amount,category:r.category,aircraft:r.aircraft,tripDate:r.tripDate,details:r.details,photoCount:data.photoCount,folderUrl:data.folderUrl,submitter:receiptCurrentUser?.name||receiptCurrentUser?.email||'',updated:data.updated||new Date().toISOString()});     paintCloudList(data.id);    }    cloudStatus('저장 완료 · '+data.photoCount+'장 · 중복 저장 방지 적용');    saveRecord().catch(e=>console.warn('로컬 보관 실패',e));   } catch(e){    // A timeout can mean the server committed successfully but reply was lost.    // Preserve token for a retry; server returns prior result without creating files.    if(!/응답을 받지 못했습니다|시간 초과|timeout|network|네트워크/i.test(String(e.message||''))){     pendingSaveToken='';pendingSaveSignature='';    }else{     cloudStatus('응답 지연 · 저장 여부 불확실. 같은 화면에서 저장을 다시 누르면 중복 없이 확인/재시도합니다.');    }    throw e;   } finally {saveButton.disabled=false;cloudButton.disabled=false;saveButton.textContent=originalLabel;}  }); }); $('cloudLoad').addEventListener('click',()=>runCloud('클라우드 불러오기',async()=>{receiptSetSaveComplete(false);lastCompletedSaveSignature='';const id=$('cloudList').value;if(!id)throw Error('클라우드 저장본을 먼저 선택하세요.');const d=await cloudRequest('load',{id});const r=d.record;currentId=r.id;cloudVersion=r.version||r.updated||'';pendingSaveToken='';pendingSaveSignature='';fillNames(r.name||'');for(const k of fields)$(k).value=r[k]||'';photos=d.photos|| (d.photo?[d.photo]:[]);selectedPhoto=0;folderUrl=d.folderUrl||r.folderUrl||'';syncPhotos();cloudStatus('클라우드 양식을 불러왔습니다. 필요한 경우 양식 저장을 눌러 기기에도 보관하세요.')})); $('cloudDelete').addEventListener('click',()=>runCloud('클라우드 삭제',async()=>{const id=$('cloudList').value;if(!id)throw Error('삭제할 저장본을 선택하세요.');if(!confirm('클라우드 저장본을 영구 삭제하시겠습니까?'))return;await cloudRequest('delete',{id});if(cloudListLoaded){cachedCloudRecords=cachedCloudRecords.filter(x=>x.id!==id);paintCloudList()}cloudStatus('클라우드 저장본 삭제 완료 (서버 호출 1회)')})); $('backendUrl').value='https://script.google.com/macros/s/AKfycbxrPy3v5wpemZXx-kyqlA6Dr3L0hybiyTHKFqtRxs3fizPS_Uor1Cno6fiegrQ2OOYHXA/exec'; $('name').addEventListener('change',()=>{syncSelectedStaff();render()});for(const k of fields)$(k).addEventListener('input',render); $('uploadArea').addEventListener('click',()=>{if(!$('albumFile').disabled)$('albumFile').click()});$('uploadArea').addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();$('albumFile').click()}});$('cameraBtn').addEventListener('click',startCamera);$('albumBtn').addEventListener('click',()=>$('albumFile').click());$('cameraFile').addEventListener('change',e=>{readPhotos([...e.target.files]);e.target.value=''});$('albumFile').addEventListener('change',e=>{readPhotos([...e.target.files]);e.target.value=''});$('removePhoto').addEventListener('click',()=>{if(!photos.length)return;photos.splice(selectedPhoto,1);selectedPhoto=Math.max(0,Math.min(selectedPhoto,photos.length-1));syncPhotos()});$('closeCamera').addEventListener('click',stopCamera);$('takePhoto').addEventListener('click',takePhoto);$('saveBtn').addEventListener('click',saveRecord);$('newBtn').addEventListener('click',clearForm);$('savedList').addEventListener('change',e=>loadRecord(e.target.value));$('deleteBtn').addEventListener('click',deleteRecord);$('printBtn').addEventListener('click',()=>window\.print());$('pngBtn').addEventListener('click',()=>downloadReceiptPng().catch(e=>notice(e.message)));window\.addEventListener('beforeunload',stopCamera);staffInit();refreshSaved();render();    // Compact UI navigation: one create screen, one cloud list. function showCabinPage(page){  const records=page==='records';  document.querySelector('.layout').hidden=records;  document.querySelector('.top-toolbar').hidden=records;  $('recordsPage').hidden=!records;  $('tabCreate').classList.toggle('active',!records);  $('tabRecords').classList.toggle('active',records);  if(records && !cloudListLoaded){$('jumpRefresh').click();} } $('tabCreate').addEventListener('click',()=>showCabinPage('create')); $('tabRecords').addEventListener('click',()=>showCabinPage('records')); $('topNew').addEventListener('click',()=>{if(photos.length || $('approval').value.trim()){if(!confirm('입력 중인 내용을 지우고 새 양식을 시작하시겠습니까?'))return;}clearForm();window\.scrollTo({top:0,behavior:'smooth'});}); $('topSave').addEventListener('click',()=>{if($('topSave').disabled)return;$('cloudSave').click();});   // 승인번호는 입력 도중 제한하지 않습니다. 입력 완료(blur) 또는 저장 시 검증합니다. (function setupApprovalValidation(){   const approvalInput = document.getElementById('approval');   const saveIds = ['topSave','cloudSave','saveBtn'];   const valid = () => /^\d{8}$/.test(approvalInput.value.trim());   const warning = () => alert('승인번호는 정확히 8자리 숫자로 입력해야 합니다.');   // 빈 칸에서 다른 입력칸으로 이동할 때는 경고하지 않으며, 저장 시에는 필수 검증합니다.   approvalInput.addEventListener('blur', function(event){     const next = event.relatedTarget;     if (next && saveIds.includes(next.id)) return; // 저장 클릭 시 알림 중복 방지     if (approvalInput.value.trim() && !valid()) warning();   });   function validateOnSave(event){     // 모든 저장 경로에서 확인하고, 첫 번째 누락 항목만 안내합니다.     // 이벤트 캡처 단계에서 검사하므로 저장 요청이 전송되기 전에 차단됩니다.     const checks = [       ['approval', '승인번호를 입력하세요.'],       ['amount', '금액을 입력하세요.'],       ['category', '구분을 입력하세요.'],       ['aircraft', '기종을 입력하세요.'],       ['tripDate', '트립시작일을 입력하세요.'],       ['details', '세부내역을 입력하세요.']     ];     let issue = null;     for (const [id, message] of checks) {       const element = document.getElementById(id);       if (!element || !String(element.value || '').trim()) {         issue = {element, message};         break;       }     }     if (!issue && !valid()) issue = {element: approvalInput, message: '승인번호는 정확히 8자리 숫자로 입력해야 합니다.'};     if (!issue && (!Number.isFinite(Number(document.getElementById('amount').value)) || Number(document.getElementById('amount').value) <= 0)) {       issue = {element:document.getElementById('amount'), message:'금액은 0원보다 큰 숫자로 입력하세요.'};     }     if (!issue && !photos.length) issue = {element:document.getElementById('uploadArea'),message:'영수증 사진을 1장 이상 첨부하세요.'};     if (!issue) return;     event.preventDefault();     event.stopImmediatePropagation();     alert(issue.message);     if (issue.element && typeof issue.element.focus === 'function') issue.element.focus({preventScroll:false});   }   saveIds.forEach(function(id){     const button = document.getElementById(id);     if (button) button.addEventListener('click',validateOnSave,true);   }); })(); </script>
+ </body>
 </html>
