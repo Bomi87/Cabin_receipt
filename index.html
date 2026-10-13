@@ -1050,7 +1050,7 @@ $('deleteSelectedReceipts').addEventListener('click',()=>runCloud('영수증 선
  const selected=[...document.querySelectorAll('.cloud-check:checked')].map(c=>c.value);
  if(!selected.length)throw Error('삭제할 영수증을 선택하세요.');
  if(selected.length>25)throw Error('한 번에 최대 25건만 삭제할 수 있습니다.');
- if(!confirm('선택한 영수증 '+selected.length+'건을 삭제하시겠습니까?\n\nDrive에 존재하는 파일은 휴지통으로 이동하고, 이미 저장소에서 사라진 파일은 목록 기록만 정리합니다.\n저장소 밖으로 이동한 파일은 휴지통에 넣지 않습니다.\n\n확인을 누르면 삭제를 진행합니다.'))return;
+ if(!confirm('선택한 영수증 '+selected.length+'건을 삭제하시겠습니까?\n\n확인을 누르면 삭제를 진행합니다.'))return;
  const result=await cloudRequest('deleteSelected',{ids:JSON.stringify(selected)});
  const deletedIds=new Set(Array.isArray(result.ids)?result.ids:[]);
  // 정확히 서버에서 삭제 완료한 항목만 화면 목록에서 제거합니다.
