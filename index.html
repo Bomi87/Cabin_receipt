@@ -1038,18 +1038,28 @@ $('deleteSelectedReceipts').addEventListener('click',()=>runCloud('영수증 선
  const selected=[...document.querySelectorAll('.cloud-check:checked')].map(c=>c.value);
  if(!selected.length)throw Error('삭제할 영수증을 선택하세요.');
  if(selected.length>25)throw Error('한 번에 최대 25건만 삭제할 수 있습니다.');
- const email=String(receiptCurrentUser?.email||'').trim().toLowerCase();
- // These two approved accounts can delete any submitter's record.
- // Drive file/folder ownership is enforced separately by Google Drive.
+ const email=String(receiptCurrentUser?.email||'').toLowerCase();
  const superusers=['sktsbyu@gmail.com','sbyu87@gmail.com'];
  const forbidden=cachedCloudRecords.filter(r=>selected.includes(r.id)&&!superusers.includes(email)&&String(r.submitterEmail||'').toLowerCase()!==email);
  if(forbidden.length)throw Error('본인이 제출한 영수증만 삭제할 수 있습니다. 제출자 정보가 없는 과거 기록은 지정된 관리자만 삭제할 수 있습니다.');
  if(!confirm('선택한 영수증 '+selected.length+'건을 삭제하시겠습니까?\n\nGoogle Sheets 기록이 삭제되고, 해당 Google Drive 폴더 및 사진·완성 PNG 파일은 휴지통으로 이동합니다.\n\n확인을 누르면 삭제를 진행합니다.'))return;
  const result=await cloudRequest('deleteSelected',{ids:JSON.stringify(selected)});
- cachedCloudRecords=cachedCloudRecords.filter(r=>!selected.includes(r.id));
- paintCloudList();
- $('zipResult').textContent='영수증 '+result.count+'건 삭제 완료 · Drive 폴더 휴지통 이동';
- cloudStatus('선택한 '+result.count+'건 삭제 완료');
+ const deletedIds=new Set(Array.isArray(result.ids)?result.ids:[]);
+ // 정확히 서버에서 삭제 완료한 항목만 화면 목록에서 제거합니다.
+ if(deletedIds.size){
+  cachedCloudRecords=cachedCloudRecords.filter(r=>!deletedIds.has(r.id));
+  paintCloudList();
+ }
+ const failures=Array.isArray(result.failed)?result.failed:[];
+ if(failures.length){
+  const message='삭제 성공 '+deletedIds.size+'건 / 실패 '+failures.length+'건\n'+failures.slice(0,5).map(x=>x.id+': '+x.error).join('\n');
+  $('zipResult').textContent=message;
+  cloudStatus('삭제 결과: 성공 '+deletedIds.size+'건, 실패 '+failures.length+'건 · 실패 항목은 목록에 유지');
+  alert(message);
+ }else{
+  $('zipResult').textContent='영수증 '+deletedIds.size+'건 삭제 완료 · Drive 폴더 휴지통 이동';
+  cloudStatus('선택한 '+deletedIds.size+'건 삭제 완료');
+ }
 }));
 $('downloadSelectedZip').addEventListener('click',()=>runCloud('ZIP 생성',async()=>{
  const ids=[...document.querySelectorAll('.cloud-check:checked')].map(c=>c.value);
