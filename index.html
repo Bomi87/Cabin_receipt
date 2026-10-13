@@ -735,7 +735,21 @@ function fileBaseName(){
  return safeFilename(approval+'(승인번호)_'+amount+'원_'+md+'_'+(selectedName()||'이름없음'));
 }
 function finalImageFilename(i,total){return fileBaseName()+(total>1?'_'+String(i+1).padStart(2,'0'):'')+'.png'}
-function decodeImage(src){return new Promise((resolve,reject)=>{const im=new Image();im.onload=()=>resolve(im);im.onerror=()=>reject(Error('이미지를 처리할 수 없습니다.'));im.src=src})}
+let receiptImageDecodeCache=null;
+function decodeImage(src){
+ if(receiptImageDecodeCache&&receiptImageDecodeCache.has(src))return receiptImageDecodeCache.get(src);
+ const task=new Promise((resolve,reject)=>{const im=new Image();im.onload=()=>resolve(im);im.onerror=()=>reject(Error('이미지를 처리할 수 없습니다.'));im.src=src});
+ if(receiptImageDecodeCache)receiptImageDecodeCache.set(src,task);
+ return task;
+}
+// Off-main-thread-friendly encoder when supported; no change in image dimensions or PNG losslessness.
+function receiptCanvasDataURL(canvas,mime='image/png',quality){
+ if(!canvas.toBlob)return Promise.resolve(canvas.toDataURL(mime,quality));
+ return new Promise((resolve,reject)=>canvas.toBlob(blob=>{
+  if(!blob){reject(Error('이미지 인코딩에 실패했습니다.'));return;}
+  const reader=new FileReader();reader.onload=()=>resolve(reader.result);reader.onerror=()=>reject(Error('이미지 읽기에 실패했습니다.'));reader.readAsDataURL(blob);
+ },mime,quality));
+}
 function wrapCanvasText(ctx,value,x,y,maxWidth,lineH,maxLines=3){
  const chars=Array.from(String(value||'—'));let line='',lines=0;
  for(const ch of chars){if(ctx.measureText(line+ch).width>maxWidth&&line){ctx.fillText(line,x,y+lines*lineH);lines++;line='';if(lines>=maxLines)return;}line+=ch;}
@@ -809,7 +823,7 @@ async function downloadReceiptPng(){
  const url=await createCombinedReceiptPng();
  const a=document.createElement('a');a.download=combinedReceiptFilename();a.href=url;
  document.body.append(a);a.click();a.remove();
- notice('완성 JPEG 1개 다운로드 · 첫 사진+정보, 나머지 '+Math.max(0,photos.length-1)+'장');
+ notice('완성 PNG 1개 다운로드 · 첫 사진+정보, 나머지 '+Math.max(0,photos.length-1)+'장');
 }
 
 // 첫 구역: 사진 1장 + 영수증 정보 테이블.
@@ -825,35 +839,96 @@ async function drawAdditionalPhoto(src, ctx, offsetY){
  ctx.restore();
 }
 // 첫 구역만 테이블을 포함하고 이후는 사진만 세로로 연결하는 PNG 1개.
-async function createCombinedReceiptPng(){
- if(!photos.length || photos.length>8)throw Error('사진은 1~8장을 첨부해야 합니다.');
- const canvas=document.createElement('canvas');
- // 1600px 레이아웃 좌표는 유지하고 실제 출력 폭은 900px로 축소합니다.
- // 첫 페이지는 세로형(1700), 나머지는 기존 높이(940)로 연결. JPEG 품질은 0.78 그대로.
- const outputScale=.5625;
- canvas.width=Math.round(1600*outputScale);
- canvas.height=Math.round((1700+940*(photos.length-1))*outputScale);
- const ctx=canvas.getContext('2d',{alpha:false,willReadFrequently:false});
- if(!ctx)throw Error('이미지 캔버스를 생성하지 못했습니다.');
- ctx.scale(outputScale,outputScale);
- ctx.fillStyle='#ffffff';ctx.fillRect(0,0,1600,1700+940*(photos.length-1));
- // 중간 PNG 인코딩/디코딩 없이 최종 캔버스에 직접 그립니다.
- // 첫 사진에만 오른쪽 정보 테이블을 넣습니다.
- await createReceiptPng(photos[0],ctx,0);
- // 두 번째 사진부터는 표 없이 사진만 아래에 배치합니다.
- for(let i=1;i<photos.length;i++){
-  await drawAdditionalPhoto(photos[i],ctx,1700+(i-1)*940);
- }
- try{return canvas.toDataURL('image/jpeg',.78);}
- catch(e){throw Error('JPEG 생성에 실패했습니다. 사진의 크기를 줄여 다시 시도하세요.');}
+// Keep below the server's 24,500,000-character total Base64 limit, with form overhead margin.
+const RECEIPT_MAX_TOTAL_BASE64=23000000;
+const RECEIPT_MAX_PHOTO_BASE64=2200000; // server per-photo cap: 2,400,000
+function receiptDataSize(data){return String(data||'').length;}
+async function createCombinedReceiptPng(photoData=photos){
+ if(!photoData.length || photoData.length>8)throw Error('사진은 1~8장을 첨부해야 합니다.');
+ const available=RECEIPT_MAX_TOTAL_BASE64-photoData.reduce((n,p)=>n+receiptDataSize(p),0);
+ if(available<250000)throw Error('사진 용량이 너무 큽니다. 사진 해상도를 줄인 후 다시 시도하세요.');
+ const fullHeight=1700+940*(photoData.length-1);
+ receiptImageDecodeCache=new Map();
+ const preload=photoData.map(src=>decodeImage(src));
+ try{await Promise.all(preload);}catch(e){receiptImageDecodeCache=null;throw e;}
+ // Render photos and table only once. Size fallback resamples pixels instead of decoding/redrawing each image.
+ const master=document.createElement('canvas');
+ master.width=1600;master.height=fullHeight;
+ const mainCtx=master.getContext('2d',{alpha:false});
+ if(!mainCtx)throw Error('이미지 캔버스를 생성하지 못했습니다.');
+ mainCtx.fillStyle='#ffffff';mainCtx.fillRect(0,0,1600,fullHeight);
+ try{
+  await createReceiptPng(photoData[0],mainCtx,0);
+  for(let i=1;i<photoData.length;i++)await drawAdditionalPhoto(photoData[i],mainCtx,1700+(i-1)*940);
+  // Most receipts fit at native 1600px: only one PNG encode in the common case.
+  let result=await receiptCanvasDataURL(master,'image/png');
+  if(result.length<=available)return result;
+  // Rare oversized receipts: reuse rendered image, never rebuild text/photo layers.
+  const reduced=document.createElement('canvas');
+  const scales=[.9,.8,.7,.6,.5,.4,.3];
+  for(const scale of scales){
+   reduced.width=Math.max(1,Math.round(master.width*scale));
+   reduced.height=Math.max(1,Math.round(master.height*scale));
+   const ctx=reduced.getContext('2d',{alpha:false});
+   if(!ctx)break;
+   ctx.fillStyle='#ffffff';ctx.fillRect(0,0,reduced.width,reduced.height);
+   ctx.drawImage(master,0,0,reduced.width,reduced.height);
+   result=await receiptCanvasDataURL(reduced,'image/png');
+   if(result.length<=available){reduced.width=1;reduced.height=1;return result;}
+  }
+  reduced.width=1;reduced.height=1;
+  throw Error('PNG 파일이 서버 전송 용량을 초과했습니다. 사진 수를 줄여 저장하세요.');
+ }finally{master.width=1;master.height=1;receiptImageDecodeCache=null;}
 }
-function combinedReceiptFilename(){return fileBaseName()+'.jpg'}
-function resizePhoto(file){return new Promise((resolve,reject)=>{if(!file.type.startsWith('image/'))return reject(Error('이미지 파일만 선택할 수 있습니다.'));const img=new Image(),url=URL.createObjectURL(file);img.onload=()=>{try{const s=Math.min(1,900/Math.max(img.naturalWidth,img.naturalHeight)),c=document.createElement('canvas');c.width=Math.max(1,Math.round(img.naturalWidth*s));c.height=Math.max(1,Math.round(img.naturalHeight*s));c.getContext('2d',{alpha:false}).drawImage(img,0,0,c.width,c.height);URL.revokeObjectURL(url);resolve(c.toDataURL('image/jpeg',.60))}catch(e){URL.revokeObjectURL(url);reject(e)}};img.onerror=()=>{URL.revokeObjectURL(url);reject(Error('사진을 읽지 못했습니다.'))};img.src=url})}
-async function readPhotos(files){try{for(const f of files){if(photos.length>=8)throw Error('한 건당 사진은 최대 8장입니다.');photos.push(await resizePhoto(f));}selectedPhoto=Math.max(0,photos.length-1);syncPhotos();notice('첨부 '+photos.length+'장')}catch(e){notice(e.message)}}
+function combinedReceiptFilename(){return fileBaseName()+'.png'}
+// Prefer higher resolution; adapt quality and pixel size to remain under GAS per-photo limit.
+function receiptEncodeJpeg(canvas,maxChars=RECEIPT_MAX_PHOTO_BASE64){
+ for(const quality of [.9,.85,.8,.75,.7]){
+  const encoded=canvas.toDataURL('image/jpeg',quality);
+  if(encoded.length<=maxChars)return encoded;
+ }
+ const tmp=document.createElement('canvas');
+ for(const factor of [.9,.8,.7,.6,.5,.4]){
+  tmp.width=Math.max(1,Math.round(canvas.width*factor));
+  tmp.height=Math.max(1,Math.round(canvas.height*factor));
+  tmp.getContext('2d',{alpha:false}).drawImage(canvas,0,0,tmp.width,tmp.height);
+  for(const q of [.85,.75,.65]){
+   const encoded=tmp.toDataURL('image/jpeg',q);
+   if(encoded.length<=maxChars)return encoded;
+  }
+ }
+ throw Error('사진을 서버 용량에 맞게 변환하지 못했습니다.');
+}
+function resizePhoto(file){return new Promise((resolve,reject)=>{
+ if(!file.type.startsWith('image/'))return reject(Error('이미지 파일만 선택할 수 있습니다.'));
+ const img=new Image(),url=URL.createObjectURL(file);
+ img.onload=()=>{try{
+  const s=Math.min(1,1600/Math.max(img.naturalWidth,img.naturalHeight));
+  const c=document.createElement('canvas');
+  c.width=Math.max(1,Math.round(img.naturalWidth*s));c.height=Math.max(1,Math.round(img.naturalHeight*s));
+  c.getContext('2d',{alpha:false}).drawImage(img,0,0,c.width,c.height);
+  const encoded=receiptEncodeJpeg(c);c.width=1;c.height=1;URL.revokeObjectURL(url);resolve(encoded);
+ }catch(e){URL.revokeObjectURL(url);reject(e)}};
+ img.onerror=()=>{URL.revokeObjectURL(url);reject(Error('사진을 읽지 못했습니다.'))};img.src=url;
+})}
+let receiptPhotosProcessing=false;
+async function readPhotos(files){
+ if(receiptPhotosProcessing){notice('사진 처리 중입니다.');return;}
+ if(photos.length+files.length>8){notice('한 건당 사진은 최대 8장입니다.');return;}
+ if(!files.length)return;
+ receiptPhotosProcessing=true;
+ try{
+  // Decode/compress at most 3 photos concurrently: good throughput without 8 large canvases at once.
+  const converted=new Array(files.length);let next=0;
+  async function worker(){while(next<files.length){const index=next++;converted[index]=await resizePhoto(files[index]);}}
+  await Promise.all(Array.from({length:Math.min(3,files.length)},()=>worker()));
+  photos.push(...converted);selectedPhoto=photos.length-1;syncPhotos();notice('첨부 '+photos.length+'장');
+ }catch(e){notice(e.message)}finally{receiptPhotosProcessing=false;}
+}
 function readPhoto(file){return readPhotos(file?[file]:[])}
 async function startCamera(){try{if(!navigator.mediaDevices?.getUserMedia)throw Error('브라우저 카메라를 사용할 수 없습니다.');stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'},width:{ideal:1920}},audio:false});$('video').srcObject=stream;$('cameraOverlay').classList.add('open')}catch(e){stopCamera();$('cameraFile').click();notice('기본 카메라 앱으로 전환합니다.')}}
 function stopCamera(){if(stream){stream.getTracks().forEach(t=>t.stop());stream=null}$('video').srcObject=null;$('cameraOverlay').classList.remove('open')}
-function takePhoto(){const v=$('video');if(!v.videoWidth){notice('카메라 준비 중입니다.');return}if(photos.length>=8){stopCamera();notice('최대 8장입니다.');return}const can=document.createElement('canvas'),s=Math.min(1,900/Math.max(v.videoWidth,v.videoHeight));can.width=Math.round(v.videoWidth*s);can.height=Math.round(v.videoHeight*s);can.getContext('2d').drawImage(v,0,0,can.width,can.height);photos.push(can.toDataURL('image/jpeg',.60));selectedPhoto=photos.length-1;stopCamera();syncPhotos()}
+function takePhoto(){const v=$('video');if(!v.videoWidth){notice('카메라 준비 중입니다.');return}if(photos.length>=8){stopCamera();notice('최대 8장입니다.');return}const can=document.createElement('canvas'),s=Math.min(1,1600/Math.max(v.videoWidth,v.videoHeight));can.width=Math.round(v.videoWidth*s);can.height=Math.round(v.videoHeight*s);can.getContext('2d').drawImage(v,0,0,can.width,can.height);photos.push(receiptEncodeJpeg(can));selectedPhoto=photos.length-1;stopCamera();syncPhotos()}
 function saved(){try{return JSON.parse(localStorage.getItem(KEY)||'[]')}catch{return []}}function setSaved(x){localStorage.setItem(KEY,JSON.stringify(x))}
 function record(){return{id:currentId||('r'+Date.now().toString(36)+Math.random().toString(36).slice(2)),dept:$('dept').value,name:selectedName(),...Object.fromEntries(fields.map(id=>[id,$(id).value])),folderUrl,baseVersion:cloudVersion,updated:new Date().toISOString()}}
 function refreshSaved(){const rows=saved().sort((a,b)=>b.updated.localeCompare(a.updated));$('savedList').innerHTML='<option value="">새 양식 / 저장본 선택</option>'+rows.map(r=>`<option value="${esc(r.id)}">${esc(r.name||'미지정')} · ${esc(r.approval||'승인번호 없음')} · ${esc((r.updated||'').slice(0,10))}</option>`).join('');$('savedList').value=currentId}
@@ -874,7 +949,7 @@ function cloudRequest(action,body={}){
   const form=document.createElement('form');form.method='POST';form.action=url;form.target=iframe.name;form.hidden=true;
   const params={action,requestId,idToken:receiptIdToken,sessionToken:receiptSessionToken,...body};for(const [k,v] of Object.entries(params)){const i=document.createElement('input');i.type='hidden';i.name=k;i.value=String(v??'');form.append(i)}
   let done=false;const finish=()=>{if(done)return;done=true;clearTimeout(timer);window.removeEventListener('message',onMessage);form.remove();iframe.remove()};
-  const timer=setTimeout(()=>{finish();reject(Error('Apps Script 응답을 받지 못했습니다(30초). /exec 주소를 시크릿 창에서 직접 열었을 때 Google 로그인이 나타나면 배포 권한 문제입니다. [배포 관리 → 새 버전, 실행 사용자: 나, 액세스: 모든 사용자]로 수정하세요.'))},30000);
+  const timer=setTimeout(()=>{finish();reject(Error('Apps Script 응답을 받지 못했습니다(90초). /exec 주소를 시크릿 창에서 직접 열었을 때 Google 로그인이 나타나면 배포 권한 문제입니다. [배포 관리 → 새 버전, 실행 사용자: 나, 액세스: 모든 사용자]로 수정하세요.'))},90000);
   function onMessage(e){const m=e.data;if(!m||m.app!=='receipt-template-bridge-v1'||m.requestId!==requestId)return;
    // Apps Script HTMLService responses come from googleusercontent.com, not script.google.com.
    // HTMLService can nest its postMessage sender in an internal iframe; e.source may differ.
@@ -1027,9 +1102,10 @@ $('cloudSave').addEventListener('click',()=>{
   const originalLabel=saveButton.textContent;
   saveButton.textContent='저장 중…';
   try{
-   // JPEG 완성본을 한번 생성하여 전송합니다.
-   const combinedJpeg=await createCombinedReceiptPng();
-   const outputs=[combinedJpeg];
+   // 무손실 PNG 완성본을 한번 생성하여 전송합니다.
+   const combinedPng=await createCombinedReceiptPng();
+   if(photos.reduce((n,p)=>n+p.length,0)+combinedPng.length>RECEIPT_MAX_TOTAL_BASE64)throw Error('이미지 전송 용량을 초과했습니다.');
+   const outputs=[combinedPng];
    const names=[combinedReceiptFilename()];
    // Retain the SAME token and record ID after a timeout: safe idempotent retry.
    // Changed data must get a NEW token; the previous uncertain save is never overwritten silently.
